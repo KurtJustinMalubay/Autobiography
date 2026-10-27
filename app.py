@@ -1,11 +1,9 @@
-"""CSIT 349 - Applied AI | Kurt Justin J. Malubay — Portfolio.
-
-Genshin Impact–inspired dark UI. Pure Streamlit components.
+"""
+CSIT 349 – Applied AI  |  Kurt Justin J. Malubay
+Genshin-inspired dark portfolio. Pure Streamlit.
 Run: streamlit run app.py
 """
-
 from __future__ import annotations
-
 from datetime import datetime
 from pathlib import Path
 
@@ -13,802 +11,853 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Page config  (must be FIRST Streamlit call)
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Kurt Malubay · Portfolio",
     page_icon="⚔️",
     layout="wide",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="expanded",
 )
 
 ROOT   = Path(__file__).parent
 ASSETS = ROOT / "assets"
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Constants
-# ─────────────────────────────────────────────────────────────────────────────
-NAME       = "Kurt"
+# ── Personal info ─────────────────────────────────────────────────────────────
 FULL_NAME  = "Kurt Justin J. Malubay"
-SECTION    = "F1"
 PROGRAM    = "BSCS 3"
+SECTION    = "F1"
 COURSE     = "CSIT 349 · Applied AI"
 INSTRUCTOR = "Jun Albert S. Pardillo"
 EMAIL      = "justinkurt837@gmail.com"
 GITHUB     = "https://github.com/KurtJustinMalubay"
 ITCH       = "https://sashimiproductions.itch.io/"
-TAGLINE    = "Curiosity builds the engineer."
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Colour palette  — dark only, tuned for comfortable viewing
-# ─────────────────────────────────────────────────────────────────────────────
-# Main surfaces
-C_BG      = "#0c1018"   # true page background
-C_PANEL   = "#111822"   # card / container fill
-C_PANEL2  = "#18222f"   # slightly raised surface
-C_BORDER  = "#243040"   # default border
-C_DIVIDER = "#1c2838"
+# ── Design tokens ─────────────────────────────────────────────────────────────
+BG      = "#090e16"
+PANEL   = "#0f1720"
+PANEL2  = "#15202e"
+PANEL3  = "#1a2840"
+BORDER  = "#1e2f42"
+GOLD    = "#c9a84c"
+GOLD_S  = "#e8c97a"       # softer highlight gold
+GOLD_D  = "#6e5220"       # dim gold
+TXT_H   = "#d6cfc4"       # warm off-white headings
+TXT_B   = "#8a95a6"       # body text
+TXT_M   = "#3d5268"       # muted / label
+ACCENT  = "#2a3f55"       # subtle highlight band
+SIDEBAR = "#07101a"
 
-# Gold — primary brand accent (Genshin's signature)
-C_GOLD    = "#c5a059"   # standard Genshin UI gold
-C_GOLD_D  = "#8a6f3a"   # dim gold — less dominant
-
-# Text — warm, comfortable, NOT glaring white
-C_TEXT_H  = "#d8cfc4"   # headings: warm off-white
-C_TEXT_B  = "#8a95a6"   # body: soft blue-grey (readable, not harsh)
-C_TEXT_M  = "#4c5c72"   # muted captions
-
-# Genshin element colours  (vivid but not neon)
-EL_GEO     = "#d4bc5c"   # Geo    — golden earth
-EL_PYRO    = "#d97a50"   # Pyro   — ember orange
-EL_HYDRO   = "#4a9ed4"   # Hydro  — ocean blue
-EL_ELECTRO = "#9c74cc"   # Electro— amethyst purple
-EL_ANEMO   = "#4eb88a"   # Anemo  — jade green
-
-# Map skill categories → elements
-ELEM_MAP = {
-    "Language":        {"color": EL_GEO,     "name": "Geo",     "icon": "⬡"},
-    "Game Dev":        {"color": EL_PYRO,    "name": "Pyro",    "icon": "🔥"},
-    "Web":             {"color": EL_HYDRO,   "name": "Hydro",   "icon": "💧"},
-    "AI/Tooling":      {"color": EL_ELECTRO, "name": "Electro", "icon": "⚡"},
-    "CS Fundamentals": {"color": EL_ANEMO,   "name": "Anemo",   "icon": "🌀"},
+# ── Element vision palette ─────────────────────────────────────────────────────
+EL = {
+    "Language":        ("#c9a84c", "Geo",     "◇"),
+    "Game Dev":        ("#c9623a", "Pyro",    "△"),
+    "Web":             ("#3d8fc2", "Hydro",   "○"),
+    "AI / Tooling":    ("#8f6fc0", "Electro", "✦"),
+    "CS Fundamentals": ("#3dab78", "Anemo",   "☆"),
 }
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Data
-# ─────────────────────────────────────────────────────────────────────────────
 SKILLS = [
     ("Python",             85, "Language"),
     ("C",                  75, "Language"),
     ("C++",                80, "Language"),
     ("C#",                 88, "Language"),
     ("HTML / CSS",         70, "Web"),
-    ("Prompt Engineering", 90, "AI/Tooling"),
+    ("Prompt Engineering", 90, "AI / Tooling"),
     ("DSA / DAA",          82, "CS Fundamentals"),
     ("Game Systems",       85, "Game Dev"),
 ]
 
-MILESTONES = [
-    {"year": "Elementary",    "title": "San Juan, Southern Leyte",         "note": "Public school. First devices, first questions about how technology works."},
-    {"year": "Jr & Sr High",  "title": "Self-study takes root",            "note": "No mentor, no syllabus. Researching and experimenting on the side."},
-    {"year": "Entrance Exams","title": "Passed multiple state exams",       "note": "Nerves at interviews cost a few offers. CIT-U was always the target."},
-    {"year": "CIT-U · Yr 1",  "title": "First prototype: TLGMS",          "note": "Enrolled in BS Computer Science. Built the first game solo."},
-    {"year": "CIT-U · Yr 2–3","title": "Infinitus begins",                "note": "Joined Glenshayne Belarmino & Wilmark Racho. UI, code, design, PM."},
-    {"year": "2026",           "title": "Target: Graduate",                "note": "BS Computer Science — first industry role.", "future": True},
-]
+# ── Session state nav ─────────────────────────────────────────────────────────
+if "page" not in st.session_state:
+    st.session_state.page = "Home"
 
-NAV_LABELS = {
-    "Home":          "◈  Home",
-    "Autobiography": "◈  My Story",
-    "Skills":        "◈  Skills",
-    "Projects":      "◈  Projects",
-    "Contact":       "◈  Contact",
-}
-PAGES = list(NAV_LABELS.keys())
+def go(p: str) -> None:
+    st.session_state.page = p
+    st.rerun()
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Asset helpers
-# ─────────────────────────────────────────────────────────────────────────────
-
-def load_resume() -> tuple[bytes, str, str] | None:
+# ── Asset helpers ─────────────────────────────────────────────────────────────
+def load_resume():
     p = ASSETS / "cv.pdf"
     if not p.exists():
         return None
-    data = p.read_bytes()
-    if data.startswith(b"%PDF"):
-        return data, "Kurt-Malubay-Resume.pdf", "application/pdf"
-    return None
+    d = p.read_bytes()
+    return (d, "Kurt-Malubay-Resume.pdf", "application/pdf") if d.startswith(b"%PDF") else None
 
-
-def show_image(fname: str, caption: str) -> None:
+def show_img(fname: str, caption: str = "", wide: bool = True) -> None:
     p = ASSETS / fname
     if p.exists():
-        cv = ASSETS / "cv.pdf"
-        dupe = cv.exists() and p.stat().st_size == cv.stat().st_size and p.read_bytes() == cv.read_bytes()
-        if not dupe:
+        if wide:
             st.image(str(p), caption=caption, use_container_width=True)
-            return
-    # placeholder
-    with st.container(border=True):
-        st.caption(f"📂  {fname}")
-        st.caption(f"Place in  assets/{fname}")
-        st.caption(caption)
+        else:
+            st.image(str(p), caption=caption)
+    else:
+        with st.container(border=True):
+            st.caption(f"📂  Place image at  assets/{fname}")
+            if caption:
+                st.caption(caption)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Sidebar
+# GLOBAL CSS
 # ─────────────────────────────────────────────────────────────────────────────
+st.markdown(f"""<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@1,400;1,600&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── Base ── */
+.stApp {{
+  background:
+    radial-gradient(ellipse 70% 40% at 15% 0%, rgba(201,168,76,.07) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 30% at 88% 95%, rgba(61,139,194,.05) 0%, transparent 55%),
+    {BG} !important;
+  background-attachment: fixed !important;
+}}
+html, body, [class*="css"], [class*="st-"] {{
+  font-family: 'Inter', system-ui, sans-serif !important;
+}}
+[data-testid="stIconMaterial"], .material-symbols-rounded {{
+  font-family: "Material Symbols Rounded" !important;
+}}
+.stApp p, .stApp li {{
+  font-size: .91rem;
+  line-height: 1.88;
+  color: {TXT_B} !important;
+}}
+.stMarkdown strong {{ color: {TXT_H} !important; font-weight: 600; }}
+
+/* ── Headings ── */
+h1 {{
+  font-family: 'Cinzel Decorative', 'Cinzel', serif !important;
+  font-size: 1.95rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  color: {GOLD_S} !important;
+  line-height: 1.28 !important;
+  text-shadow: 0 0 48px rgba(201,168,76,.15) !important;
+}}
+h2 {{
+  font-family: 'Cinzel', serif !important;
+  font-size: .88rem !important;
+  font-weight: 600 !important;
+  letter-spacing: .22em !important;
+  text-transform: uppercase !important;
+  color: {TXT_H} !important;
+}}
+h3 {{
+  font-family: 'Cinzel', serif !important;
+  font-size: .70rem !important;
+  font-weight: 600 !important;
+  letter-spacing: .20em !important;
+  text-transform: uppercase !important;
+  color: {GOLD_D} !important;
+}}
+h4 {{
+  font-family: 'Inter', sans-serif !important;
+  font-size: .88rem !important;
+  font-weight: 600 !important;
+  color: {TXT_H} !important;
+}}
+
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {{
+  background: {SIDEBAR} !important;
+  border-right: 1px solid {BORDER} !important;
+}}
+[data-testid="stSidebar"] p {{
+  color: {TXT_B} !important;
+  font-size: .82rem !important;
+}}
+[data-testid="stHeader"] {{ background: transparent !important; }}
+
+/* ── Hide chrome ── */
+[data-testid="stDecoration"], [data-testid="stAppDeployButton"],
+[data-testid="stMainMenu"], [data-testid="stStatusWidget"] {{
+  display: none !important;
+}}
+
+/* ── Metrics ── */
+[data-testid="stMetric"] {{
+  background: {PANEL} !important;
+  border: 1px solid {BORDER} !important;
+  border-top: 2px solid {GOLD_D} !important;
+  padding: .85rem 1rem !important;
+  border-radius: 4px !important;
+}}
+[data-testid="stMetricValue"] {{
+  font-family: 'Cinzel', serif !important;
+  font-size: 1.45rem !important;
+  font-weight: 700 !important;
+  color: {GOLD} !important;
+}}
+[data-testid="stMetricLabel"] p {{
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: .58rem !important;
+  letter-spacing: .18em !important;
+  text-transform: uppercase !important;
+  color: {TXT_M} !important;
+}}
+[data-testid="stMetricDelta"] span {{
+  color: {TXT_M} !important;
+  font-size: .66rem !important;
+}}
+
+/* ── Containers ── */
+[data-testid="stVerticalBlockBorderWrapper"] > div {{
+  background: {PANEL} !important;
+  border: 1px solid {BORDER} !important;
+  border-radius: 4px !important;
+  padding: 1rem 1.1rem !important;
+}}
+
+/* ── Blockquote ── */
+blockquote {{
+  background: rgba(201,168,76,.04) !important;
+  border-left: 3px solid {GOLD} !important;
+  padding: .6rem 1rem !important;
+  margin: .6rem 0 1rem !important;
+  border-radius: 0 3px 3px 0 !important;
+}}
+blockquote p {{
+  font-family: 'Cormorant Garamond', Georgia, serif !important;
+  font-size: 1.05rem !important;
+  font-style: italic !important;
+  color: #b0a070 !important;
+  line-height: 1.65 !important;
+}}
+
+/* ── Captions ── */
+[data-testid="stCaptionContainer"] p {{
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: .65rem !important;
+  letter-spacing: .06em !important;
+  color: {TXT_M} !important;
+}}
+
+/* ── Dividers ── */
+hr {{
+  border: none !important;
+  border-top: 1px solid {BORDER} !important;
+  margin: 1.2rem 0 !important;
+}}
+
+/* ── Tabs ── */
+.stTabs [data-baseweb="tab-list"] {{
+  background: transparent !important;
+  border-bottom: 1px solid {BORDER} !important;
+  gap: 0 !important;
+}}
+.stTabs [data-baseweb="tab"] {{
+  font-family: 'Cinzel', serif !important;
+  font-size: .68rem !important;
+  letter-spacing: .16em !important;
+  text-transform: uppercase !important;
+  color: {TXT_M} !important;
+  padding: .45rem 1rem !important;
+}}
+.stTabs [aria-selected="true"] {{
+  color: {GOLD} !important;
+  background: {PANEL} !important;
+  border-bottom: 2px solid {GOLD} !important;
+}}
+
+/* ── Form labels ── */
+.stSelectbox label, .stTextInput label, .stTextArea label,
+.stRadio label, .stCheckbox label, .stSlider label {{
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: .63rem !important;
+  letter-spacing: .10em !important;
+  text-transform: uppercase !important;
+  color: {TXT_M} !important;
+}}
+
+/* ── Buttons ── */
+.stButton button, .stLinkButton a {{
+  font-family: 'Cinzel', serif !important;
+  font-size: .67rem !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+}}
+
+/* ── Expanders ── */
+details summary, .streamlit-expanderHeader {{
+  font-family: 'Cinzel', serif !important;
+  font-size: .68rem !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+  color: {TXT_B} !important;
+}}
+
+/* ── Info/alerts ── */
+[data-testid="stNotification"] {{
+  background: rgba(201,168,76,.05) !important;
+  border-left: 3px solid {GOLD_D} !important;
+}}
+[data-testid="stNotification"] p {{ color: {TXT_B} !important; }}
+
+/* ── Progress bars ── */
+.stProgress > div > div {{
+  background: rgba(255,255,255,.04) !important;
+  border-radius: 2px !important;
+}}
+.stProgress > div > div > div > div {{
+  background: linear-gradient(90deg, {GOLD_D}, {GOLD}) !important;
+  border-radius: 2px !important;
+}}
+
+/* ── Tables ── */
+[data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th,
+[data-testid="stTable"] td, [data-testid="stTable"] th {{
+  color: {TXT_B} !important;
+  font-size: .80rem !important;
+}}
+</style>""", unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SIDEBAR
+# ─────────────────────────────────────────────────────────────────────────────
+page = st.session_state.page
+
+PAGES = [
+    ("Home",    "Ⅰ",  "Base Camp"),
+    ("Story",   "Ⅱ",  "Chronicle"),
+    ("Skills",  "Ⅲ",  "Vision"),
+    ("Works",   "Ⅳ",  "Codex"),
+    ("Connect", "Ⅴ",  "Summon"),
+]
+
 with st.sidebar:
-    # Identity block
+    # ── Top seal ──────────────────────────────────────────────────────────
     st.markdown(
         f"""
-        <div style="padding:1.2rem 0 0.8rem; text-align:center;">
-            <div style="
-                display:inline-flex; align-items:center; justify-content:center;
-                width:56px; height:56px;
-                border:2px solid {C_GOLD}; color:{C_GOLD};
-                font-family:'Cinzel',serif; font-size:1rem; font-weight:700;
-                background:{C_PANEL2}; margin-bottom:0.7rem;
-                transform:rotate(45deg); letter-spacing:0.05em;
-            ">
-                <span style="transform:rotate(-45deg)">KM</span>
-            </div>
-            <div style="font-family:'Cinzel',serif; font-size:0.95rem;
-                        color:{C_TEXT_H}; letter-spacing:0.12em; text-transform:uppercase;">
-                {NAME}
-            </div>
-            <div style="font-family:'JetBrains Mono',monospace; font-size:0.68rem;
-                        color:{C_TEXT_M}; letter-spacing:0.06em; margin-top:0.25rem;">
-                {PROGRAM} · {SECTION}
-            </div>
+        <div style="padding: 1.6rem 0 1.2rem; text-align: center; border-bottom: 1px solid {BORDER};">
+          <div style="
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 52px; height: 52px;
+            background: linear-gradient(135deg, {PANEL2}, {PANEL3});
+            border: 1.5px solid {GOLD_D};
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            font-family: 'Cinzel Decorative', Cinzel, serif;
+            font-size: .80rem; font-weight: 700;
+            color: {GOLD}; letter-spacing: .04em;
+          ">KM</div>
+          <div style="
+            margin-top: .9rem;
+            font-family: 'Cinzel Decorative', Cinzel, serif;
+            font-size: .85rem; letter-spacing: .18em;
+            color: {TXT_H};
+          ">KURT</div>
+          <div style="
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .56rem; letter-spacing: .14em;
+            color: {TXT_M}; margin-top: .3rem; text-transform: uppercase;
+          ">UI · PM · BSCS · Class 2028</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+    st.write("")
+
+    # ── Nav ───────────────────────────────────────────────────────────────
+    for key, numeral, subtitle in PAGES:
+        active = page == key
+        st.markdown(
+            f"""
+            <div style="
+              display: flex; align-items: center; gap: .7rem;
+              padding: .55rem .8rem; margin-bottom: .25rem;
+              background: {'rgba(201,168,76,.08)' if active else 'transparent'};
+              border-left: 2px solid {'#c9a84c' if active else BORDER};
+              border-radius: 0 3px 3px 0;
+              cursor: pointer;
+            ">
+              <span style="
+                font-family: 'Cinzel', serif; font-size: .58rem;
+                color: {'#c9a84c' if active else TXT_M}; letter-spacing: .12em;
+                min-width: 14px; text-align: center;
+              ">{numeral}</span>
+              <div>
+                <div style="
+                  font-family: 'Cinzel', serif; font-size: .68rem;
+                  letter-spacing: .14em; text-transform: uppercase;
+                  color: {'#e8c97a' if active else TXT_B};
+                  font-weight: {'600' if active else '400'};
+                ">{key}</div>
+                <div style="
+                  font-family: 'JetBrains Mono', monospace;
+                  font-size: .52rem; letter-spacing: .10em;
+                  color: {'#c9a84c' if active else TXT_M}; margin-top: .05rem;
+                ">{subtitle}</div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.button(
+            key, key=f"nav_{key}",
+            use_container_width=True,
+            on_click=go, args=(key,),
+            type="primary" if active else "secondary",
+            help=subtitle,
+            label_visibility="collapsed",
+        )
+
+    st.write("")
     st.divider()
 
-    # Navigation — display names are different from page keys
-    selected_display = st.radio(
-        "nav",
-        list(NAV_LABELS.values()),
-        label_visibility="collapsed",
+    # ── Bio strip ─────────────────────────────────────────────────────────
+    st.markdown(
+        f"""
+        <div style="
+          font-family: 'JetBrains Mono', monospace;
+          font-size: .60rem; color: {TXT_M};
+          letter-spacing: .08em; line-height: 2;
+        ">
+          📍&nbsp; Cebu City, PH<br>
+          🎓&nbsp; CIT-U · {PROGRAM} · {SECTION}<br>
+          ✦&nbsp;&nbsp; Graduating 2028<br>
+          🌟&nbsp; Open for Internship
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-    page = [k for k, v in NAV_LABELS.items() if v == selected_display][0]
 
+    st.write("")
     st.divider()
 
-    # Quick stats — 2-column mini grid
-    q1, q2 = st.columns(2)
-    q1.metric("Year",     "3rd",  label_visibility="visible")
-    q2.metric("Grad",     "2026", label_visibility="visible")
-
-    st.divider()
-
-    # Links
-    st.link_button("⌥  GitHub",   GITHUB,             use_container_width=True)
-    st.link_button("🎮  itch.io",  ITCH,               use_container_width=True)
-    st.link_button("✉  Email",    f"mailto:{EMAIL}",  use_container_width=True)
+    # ── Links ─────────────────────────────────────────────────────────────
+    lc1, lc2, lc3 = st.columns(3)
+    lc1.link_button("GH", GITHUB,           use_container_width=True, help="GitHub")
+    lc2.link_button("IT", ITCH,             use_container_width=True, help="itch.io")
+    lc3.link_button("✉",  f"mailto:{EMAIL}", use_container_width=True, help="Email")
 
     res = load_resume()
     if res:
         rb, rfn, rmt = res
         st.download_button("⬇  Résumé", rb, file_name=rfn, mime=rmt, use_container_width=True)
-    else:
-        st.caption("Résumé · add cv.pdf to assets/")
 
-    st.divider()
-    st.caption(f"{COURSE}")
-    st.caption("Built with Streamlit")
+    st.write("")
+    st.caption(COURSE)
+    st.caption(INSTRUCTOR)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Global CSS  — injected after sidebar so dark variable is available
-# ─────────────────────────────────────────────────────────────────────────────
-st.markdown(
-    f"""<style>
-    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
-
-    /* ── Page ── */
-    .stApp {{
-        background:
-            radial-gradient(ellipse 90% 50% at 5% -5%,  rgba(197,160,89,0.07) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 40% at 95% 100%, rgba(74,158,212,0.05) 0%, transparent 55%),
-            {C_BG} !important;
-        background-attachment: fixed !important;
-    }}
-
-    /* ── Typography base ── */
-    html, body, [class*="css"], [class*="st-"] {{
-        font-family: 'Inter', system-ui, sans-serif !important;
-    }}
-    [data-testid="stIconMaterial"],.material-symbols-rounded {{
-        font-family:"Material Symbols Rounded" !important; line-height:1;
-    }}
-    .stApp p, .stApp li {{
-        font-size: 0.93rem;
-        line-height: 1.85;
-        color: {C_TEXT_B} !important;
-    }}
-    .stMarkdown strong {{
-        color: {C_TEXT_H} !important;
-        font-weight: 600;
-    }}
-
-    /* ── Headings ── */
-    h1 {{
-        font-family: 'Cinzel Decorative','Cinzel',serif !important;
-        font-size: 2.2rem !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.04em !important;
-        color: {C_GOLD} !important;
-        text-shadow: 0 0 40px rgba(197,160,89,0.22) !important;
-        line-height: 1.35 !important;
-    }}
-    h2 {{
-        font-family: 'Cinzel',serif !important;
-        font-size: 1.05rem !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.10em !important;
-        color: {C_TEXT_H} !important;
-        text-transform: uppercase !important;
-        padding-bottom: 0.3rem !important;
-        border-bottom: 1px solid {C_DIVIDER} !important;
-    }}
-    h3 {{
-        font-family: 'Cinzel',serif !important;
-        font-size: 0.78rem !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.18em !important;
-        text-transform: uppercase !important;
-        color: {C_GOLD_D} !important;
-        margin-bottom: 0.2rem !important;
-    }}
-    h4 {{
-        font-family: 'Inter', sans-serif !important;
-        font-size: 0.92rem !important;
-        font-weight: 600 !important;
-        color: {C_TEXT_H} !important;
-    }}
-
-    /* ── Sidebar ── */
-    [data-testid="stSidebar"] {{
-        background: #0a0e18 !important;
-        border-right: 1px solid {C_BORDER} !important;
-    }}
-    [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] li {{
-        color: {C_TEXT_B} !important;
-        font-size: 0.84rem !important;
-    }}
-    [data-testid="stSidebar"] .stRadio label {{
-        font-family: 'Cinzel',serif !important;
-        font-size: 0.75rem !important;
-        letter-spacing: 0.12em !important;
-        color: {C_TEXT_B} !important;
-    }}
-    [data-testid="stHeader"] {{ background: transparent !important; }}
-
-    /* ── Hide chrome ── */
-    [data-testid="stDecoration"],
-    [data-testid="stAppDeployButton"],
-    [data-testid="stMainMenu"],
-    [data-testid="stStatusWidget"] {{ display: none !important; }}
-
-    /* ── Metrics ── */
-    [data-testid="stMetric"] {{
-        background: {C_PANEL} !important;
-        border: 1px solid {C_BORDER} !important;
-        border-top: 2px solid {C_GOLD_D} !important;
-        padding: 0.9rem 1rem !important;
-    }}
-    [data-testid="stMetricValue"] {{
-        font-family: 'Cinzel',serif !important;
-        font-size: 1.5rem !important;
-        font-weight: 700 !important;
-        color: {C_GOLD} !important;
-    }}
-    [data-testid="stMetricLabel"] p {{
-        font-family: 'JetBrains Mono',monospace !important;
-        font-size: 0.62rem !important;
-        letter-spacing: 0.18em !important;
-        text-transform: uppercase !important;
-        color: {C_TEXT_M} !important;
-    }}
-    [data-testid="stMetricDelta"] span {{
-        color: {C_TEXT_M} !important;
-        font-family: 'JetBrains Mono',monospace !important;
-        font-size: 0.7rem !important;
-    }}
-
-    /* ── Bordered containers ── */
-    [data-testid="stVerticalBlockBorderWrapper"] > div {{
-        background: {C_PANEL} !important;
-        border: 1px solid {C_BORDER} !important;
-        border-top: 2px solid rgba(197,160,89,0.30) !important;
-        padding: 1rem 1.1rem !important;
-    }}
-
-    /* ── Blockquote ── */
-    blockquote {{
-        background: rgba(197,160,89,0.05) !important;
-        border-left: 3px solid {C_GOLD} !important;
-        padding: 0.65rem 1rem !important;
-        margin: 0.8rem 0 1.2rem 0 !important;
-        border-radius: 0 3px 3px 0 !important;
-    }}
-    blockquote p {{
-        font-family: 'Cormorant Garamond',Georgia,serif !important;
-        font-size: 1.08rem !important;
-        font-style: italic !important;
-        color: #b8a880 !important;
-        line-height: 1.6 !important;
-    }}
-
-    /* ── Captions ── */
-    [data-testid="stCaptionContainer"] p {{
-        font-family: 'JetBrains Mono',monospace !important;
-        font-size: 0.70rem !important;
-        letter-spacing: 0.05em !important;
-        color: {C_TEXT_M} !important;
-    }}
-
-    /* ── Progress bars ── */
-    .stProgress > div > div {{
-        background: rgba(255,255,255,0.05) !important;
-        border-radius: 2px !important;
-    }}
-    .stProgress > div > div > div > div {{
-        background: linear-gradient(90deg, {C_GOLD_D}, {C_GOLD}) !important;
-        border-radius: 2px !important;
-    }}
-    .stProgress p {{
-        color: {C_TEXT_B} !important;
-        font-size: 0.82rem !important;
-    }}
-
-    /* ── Dividers ── */
-    hr {{
-        border: none !important;
-        border-top: 1px solid {C_DIVIDER} !important;
-        margin: 1.4rem 0 !important;
-    }}
-
-    /* ── Tabs ── */
-    .stTabs [data-baseweb="tab-list"] {{
-        background: transparent !important;
-        border-bottom: 1px solid {C_BORDER} !important;
-        gap: 0 !important;
-    }}
-    .stTabs [data-baseweb="tab"] {{
-        font-family: 'Cinzel',serif !important;
-        font-size: 0.74rem !important;
-        letter-spacing: 0.14em !important;
-        text-transform: uppercase !important;
-        color: {C_TEXT_M} !important;
-        padding: 0.55rem 1.1rem !important;
-        border-radius: 3px 3px 0 0 !important;
-    }}
-    .stTabs [aria-selected="true"] {{
-        color: {C_GOLD} !important;
-        background: {C_PANEL} !important;
-        border-bottom: 2px solid {C_GOLD} !important;
-    }}
-
-    /* ── Form labels ── */
-    .stSelectbox label, .stMultiSelect label, .stSlider label,
-    .stTextInput label, .stTextArea label, .stCheckbox label,
-    .stRadio label {{
-        font-family: 'JetBrains Mono',monospace !important;
-        font-size: 0.68rem !important;
-        letter-spacing: 0.10em !important;
-        text-transform: uppercase !important;
-        color: {C_TEXT_M} !important;
-    }}
-
-    /* ── Buttons ── */
-    .stButton button {{
-        font-family: 'Cinzel',serif !important;
-        font-size: 0.72rem !important;
-        letter-spacing: 0.14em !important;
-        text-transform: uppercase !important;
-        border-color: {C_BORDER} !important;
-    }}
-    .stLinkButton a {{
-        font-family: 'Cinzel',serif !important;
-        font-size: 0.72rem !important;
-        letter-spacing: 0.12em !important;
-        text-transform: uppercase !important;
-    }}
-
-    /* ── Info / notification boxes ── */
-    [data-testid="stNotification"] {{
-        background: rgba(197,160,89,0.06) !important;
-        border-left: 3px solid {C_GOLD_D} !important;
-    }}
-    [data-testid="stNotification"] p {{
-        color: {C_TEXT_B} !important;
-    }}
-
-    /* ── Expanders ── */
-    details summary, .streamlit-expanderHeader {{
-        font-family: 'Cinzel',serif !important;
-        font-size: 0.76rem !important;
-        letter-spacing: 0.12em !important;
-        text-transform: uppercase !important;
-        color: {C_TEXT_B} !important;
-    }}
-
-    /* ── Code ── */
-    .stCode code {{ font-family:'JetBrains Mono',monospace !important; font-size:0.80rem !important; }}
-
-    /* ── Tables / dataframes ── */
-    [data-testid="stDataFrame"] td,
-    [data-testid="stDataFrame"] th {{
-        color: {C_TEXT_B} !important;
-        font-family: 'Inter',sans-serif !important;
-        font-size: 0.82rem !important;
-    }}
-    [data-testid="stTable"] td,
-    [data-testid="stTable"] th {{
-        color: {C_TEXT_B} !important;
-        font-size: 0.84rem !important;
-    }}
-    </style>""",
-    unsafe_allow_html=True,
-)
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Shared helpers
+# HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def section_eyebrow(number: str) -> None:
-    st.caption(f"✦  {number}  ·  {COURSE}  ·  {PROGRAM}")
-
+def eyebrow(label: str) -> None:
+    st.markdown(
+        f"<div style='font-family:JetBrains Mono,monospace;font-size:.60rem;"
+        f"letter-spacing:.18em;text-transform:uppercase;color:{TXT_M};"
+        f"margin-bottom:.4rem;'>✦ &nbsp;{label}&nbsp; · &nbsp;{COURSE}</div>",
+        unsafe_allow_html=True,
+    )
 
 def footer() -> None:
     st.divider()
     st.caption(
-        f"✦  {FULL_NAME}  ·  {SECTION}  ·  {COURSE}  ·  {INSTRUCTOR}"
+        f"✦  {FULL_NAME}  ·  Section {SECTION}  ·  {COURSE}  ·  {INSTRUCTOR}"
     )
 
-
-def show_tags(items: list[str]) -> None:
-    st.markdown("  ".join(f"`{t}`" for t in items))
-
-
-def show_timeline(items: list[dict]) -> None:
-    for item in items:
-        future = item.get("future", False)
-        left, right = st.columns([1, 3])
-        with left:
-            marker = "◈" if future else "◆"
-            st.markdown(
-                f"<span style='font-family:JetBrains Mono,monospace;"
-                f"font-size:0.68rem;color:{C_GOLD_D if future else C_GOLD};"
-                f"letter-spacing:0.06em;'>{marker}  {item['year']}</span>",
-                unsafe_allow_html=True,
-            )
-        with right:
-            style = f"opacity:0.6;" if future else ""
-            st.markdown(f"**{item['title']}**")
-            st.write(item["note"])
-        st.write("")
-
-
-def quest_bar(label: str, pct: float, color: str = C_GOLD) -> None:
-    """A quest-progress row: label on top, coloured bar below."""
-    pct_clamped = max(0.0, min(1.0, pct))
-    filled = int(pct_clamped * 20)       # 20-segment bar
-    empty  = 20 - filled
-    bar_str = "█" * filled + "░" * empty
-    col_l, col_r = st.columns([5, 1])
-    col_l.markdown(f"**{label}**")
-    col_r.markdown(
-        f"<span style='font-family:JetBrains Mono,monospace;"
-        f"font-size:0.68rem;color:{C_TEXT_M};'>{int(pct_clamped*100)}%</span>",
+def rule(text: str, color: str = GOLD_D) -> None:
+    """Thin labelled horizontal rule."""
+    st.markdown(
+        f"<div style='display:flex;align-items:center;gap:.9rem;margin:1.5rem 0 .8rem;'>"
+        f"<span style='font-family:Cinzel,serif;font-size:.60rem;letter-spacing:.22em;"
+        f"text-transform:uppercase;color:{color};white-space:nowrap;'>{text}</span>"
+        f"<div style='flex:1;height:1px;background:{BORDER};'></div>"
+        f"</div>",
         unsafe_allow_html=True,
+    )
+
+def mono_tag(text: str, color: str = TXT_M) -> None:
+    st.markdown(
+        f"<span style='font-family:JetBrains Mono,monospace;font-size:.63rem;"
+        f"letter-spacing:.12em;text-transform:uppercase;color:{color};'>{text}</span>",
+        unsafe_allow_html=True,
+    )
+
+def pill_row(items: list[tuple[str, str]]) -> None:
+    """Render colored pill badges inline."""
+    pills = "".join(
+        f"<span style='display:inline-block;margin:0 .3rem .35rem 0;"
+        f"padding:.15rem .55rem;border:1px solid {c};border-radius:3px;"
+        f"font-family:JetBrains Mono,monospace;font-size:.58rem;"
+        f"letter-spacing:.10em;text-transform:uppercase;color:{c};'>{t}</span>"
+        for t, c in items
     )
     st.markdown(
-        f"<div style='font-family:JetBrains Mono,monospace;font-size:0.68rem;"
-        f"color:{color};letter-spacing:-0.5px;margin-bottom:1rem;'>{bar_str}</div>",
+        f"<div style='line-height:2.2;margin:.3rem 0 .6rem;'>{pills}</div>",
         unsafe_allow_html=True,
     )
 
+def stat_card(label: str, value: str, sub: str = "", color: str = GOLD) -> None:
+    st.markdown(
+        f"<div style='background:{PANEL};border:1px solid {BORDER};"
+        f"border-top:2px solid {color};border-radius:4px;"
+        f"padding:.85rem 1rem;'>"
+        f"<div style='font-family:JetBrains Mono,monospace;font-size:.55rem;"
+        f"letter-spacing:.18em;text-transform:uppercase;color:{TXT_M};"
+        f"margin-bottom:.35rem;'>{label}</div>"
+        f"<div style='font-family:Cinzel,serif;font-size:1.35rem;"
+        f"font-weight:700;color:{color};line-height:1.2;'>{value}</div>"
+        f"{'<div style=\"font-family:JetBrains Mono,monospace;font-size:.60rem;color:' + TXT_M + ';margin-top:.25rem;letter-spacing:.06em;\">' + sub + '</div>' if sub else ''}"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
 
 def vision_panel(category: str, skills: list[tuple[str, int]]) -> None:
-    """Vision-element skill panel — unique Genshin-style display."""
-    el    = ELEM_MAP.get(category, {"color": C_GOLD, "name": category, "icon": "◆"})
-    color = el["color"]
-    icon  = el["icon"]
-    ename = el["name"]
-
+    color, ename, icon = EL.get(category, (GOLD, category, "◆"))
     with st.container(border=True):
+        # Header
         st.markdown(
-            f"<div style='display:flex;align-items:center;gap:0.6rem;margin-bottom:0.4rem;'>"
-            f"<span style='font-size:1.4rem;line-height:1;'>{icon}</span>"
-            f"<div><div style='font-family:Cinzel,serif;font-size:0.72rem;"
-            f"letter-spacing:0.18em;text-transform:uppercase;color:{color};'>{ename}</div>"
-            f"<div style='font-family:JetBrains Mono,monospace;font-size:0.60rem;"
-            f"color:{C_TEXT_M};letter-spacing:0.06em;'>{category}</div></div></div>",
+            f"<div style='display:flex;align-items:flex-start;gap:.65rem;margin-bottom:.7rem;'>"
+            f"<div style='font-size:1.45rem;line-height:1;margin-top:.1rem;'>{icon}</div>"
+            f"<div>"
+            f"<div style='font-family:Cinzel,serif;font-size:.65rem;letter-spacing:.22em;"
+            f"text-transform:uppercase;color:{color};'>{ename}</div>"
+            f"<div style='font-family:JetBrains Mono,monospace;font-size:.57rem;"
+            f"color:{TXT_M};letter-spacing:.08em;margin-top:.1rem;'>{category}</div>"
+            f"</div></div>",
             unsafe_allow_html=True,
         )
-        st.divider()
-        for sname, score in sorted(skills, key=lambda x: -x[1]):
-            row_l, row_r = st.columns([4, 1])
-            row_l.write(sname)
-            row_r.markdown(
-                f"<span style='font-family:JetBrains Mono,monospace;"
-                f"font-size:0.78rem;color:{color};font-weight:600;'>{score}</span>",
-                unsafe_allow_html=True,
+        st.markdown(
+            f"<div style='height:1px;background:linear-gradient(90deg,{color}44,transparent);"
+            f"margin-bottom:.75rem;'></div>",
+            unsafe_allow_html=True,
+        )
+        # Skills
+        for name, score in sorted(skills, key=lambda x: -x[1]):
+            filled = int(score / 10)
+            empty  = 10 - filled
+            dots   = (
+                f"<span style='color:{color};opacity:.85;'>{'◆' * filled}</span>"
+                f"<span style='color:{TXT_M};opacity:.35;'>{'◇' * empty}</span>"
             )
             st.markdown(
-                f"<div style='background:rgba(255,255,255,0.05);border-radius:2px;"
-                f"height:4px;margin:-0.3rem 0 0.7rem;overflow:hidden;'>"
-                f"<div style='background:{color};width:{score}%;height:4px;"
-                f"border-radius:2px;opacity:0.75;'></div></div>",
+                f"<div style='display:flex;align-items:center;justify-content:space-between;"
+                f"margin-bottom:.55rem;'>"
+                f"<div style='font-size:.82rem;color:{TXT_B};'>{name}</div>"
+                f"<div style='display:flex;align-items:center;gap:.5rem;'>"
+                f"<div style='font-family:JetBrains Mono,monospace;font-size:.60rem;"
+                f"letter-spacing:.04em;'>{dots}</div>"
+                f"<span style='font-family:JetBrains Mono,monospace;font-size:.68rem;"
+                f"color:{color};font-weight:600;min-width:24px;text-align:right;'>{score}</span>"
+                f"</div></div>",
                 unsafe_allow_html=True,
             )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# HOME
+# PAGE — HOME
 # ─────────────────────────────────────────────────────────────────────────────
 
 def page_home() -> None:
-    section_eyebrow("00")
+    eyebrow("Portfolio · Base Camp")
     st.write("")
 
-    # ── Hero ──────────────────────────────────────────────────────────────
-    hero_l, hero_r = st.columns([1.6, 1], gap="large")
+    # ── Hero ─────────────────────────────────────────────────────────────
+    hero_l, hero_r = st.columns([5, 3], gap="large")
+
     with hero_l:
-        st.title(NAME)
-        st.caption(f"{FULL_NAME}  ·  {PROGRAM}  ·  Cebu City")
-        st.write("")
-        st.markdown(f"> *\"{TAGLINE}\"*")
+        st.markdown(
+            f"<div style='font-family:JetBrains Mono,monospace;font-size:.58rem;"
+            f"letter-spacing:.24em;text-transform:uppercase;color:{TXT_M};"
+            f"margin-bottom:.55rem;'>CIT-U  ·  Cebu City  ·  Class of 2028</div>",
+            unsafe_allow_html=True,
+        )
+        st.title("Kurt Justin J. Malubay")
+        st.markdown(
+            f"<div style='font-family:Cinzel,serif;font-size:.78rem;letter-spacing:.16em;"
+            f"text-transform:uppercase;color:{GOLD_D};margin:.15rem 0 1.2rem;'>"
+            f"UI / UX &nbsp;·&nbsp; Project Management &nbsp;·&nbsp; Game Dev</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown("> *\"Curiosity builds the engineer.\"*")
         st.write("")
         st.write(
-            "I write game systems, UI code, and the tooling that holds a project together. "
-            "Mostly C#, C++, and Python — self-taught since a Blackberry phone sparked the "
-            "question *\"how does this work?\"* Three years into a CS degree, still shipping "
-            "on jam deadlines."
+            "Third-year BS Computer Science student at CIT-U. "
+            "I came into computer science through a question a Blackberry phone once raised. "
+            "That question turned into game development, interface design, and the "
+            "coordination work that holds projects together."
         )
         st.write(
-            "The work I want is the part players feel but never see: "
-            "UI flows, scene systems, the glue that saves the team an afternoon."
+            "Right now I'm leading the UI/UX and project management side of **Infinitus** "
+            "alongside two teammates, while finishing the degree and staying "
+            "open to what comes after 2028."
         )
         st.write("")
-        b1, b2, b3 = st.columns(3)
-        b1.link_button("🎮  Games",   ITCH,            use_container_width=True)
-        b2.link_button("⌥  Code",     GITHUB,          use_container_width=True)
-        b3.link_button("✉  Contact",  f"mailto:{EMAIL}", use_container_width=True)
+
+        ba, bb, bc = st.columns(3)
+        ba.button("⚔  Works",       key="hero_works",   on_click=go, args=("Works",),   use_container_width=True)
+        bb.link_button("⌥  GitHub", GITHUB,             use_container_width=True)
+        bc.link_button("✉  Contact", f"mailto:{EMAIL}", use_container_width=True)
 
     with hero_r:
-        show_image("profile.jpg", "Kurt · BSCS 3 · CIT-U")
+        show_img("profile.jpg", f"{FULL_NAME} · BSCS 3 · CIT-U")
 
+    # ── Stats strip ──────────────────────────────────────────────────────
     st.divider()
+    s1, s2, s3, s4 = st.columns(4)
+    with s1: stat_card("Degree",      "BSCS",  "Computer Science")
+    with s2: stat_card("University",  "CIT-U", "Cebu Institute of Tech", GOLD)
+    with s3: stat_card("Year",        "3rd",   "Section F1", EL["Web"][0])
+    with s4: stat_card("Graduating",  "2028",  "BS Comp. Science", EL["Anemo"][0])
 
-    # ── Character Attributes ───────────────────────────────────────────────
-    st.subheader("Character Attributes")
-    st.write("")
-    a1, a2, a3, a4 = st.columns(4)
-    a1.metric("Projects",   "2+",   "shipped games")
-    a2.metric("Languages",  "6+",   "C-family core")
-    a3.metric("Year Level", "3rd",  "CIT-U BSCS")
-    a4.metric("Graduating", "2026", "target")
+    # ── Roles ─────────────────────────────────────────────────────────────
+    rule("What I Bring")
+    r1, r2, r3 = st.columns(3, gap="medium")
 
-    st.divider()
-
-    # ── Specialisations ────────────────────────────────────────────────────
-    st.subheader("Specialisations")
-    st.write("")
-    sp1, sp2, sp3 = st.columns(3, gap="medium")
-    with sp1:
+    with r1:
         with st.container(border=True):
             st.markdown(
-                f"<span style='font-size:1.2rem;'>🔥</span>"
-                f"<span style='font-family:Cinzel,serif;font-size:0.72rem;"
-                f"letter-spacing:0.16em;text-transform:uppercase;"
-                f"color:{EL_PYRO};margin-left:0.5rem;'>Game Systems</span>",
+                f"<div style='font-family:JetBrains Mono,monospace;font-size:.58rem;"
+                f"letter-spacing:.16em;text-transform:uppercase;color:{EL['Web'][0]};"
+                f"margin-bottom:.5rem;'>🎨 &nbsp;UI / UX Design</div>",
                 unsafe_allow_html=True,
             )
-            st.write("")
+            st.markdown("#### Interface Architecture")
             st.write(
-                "State machines, scene transitions, and the architecture keeping "
-                "a Godot project stable under pressure. C# and GDScript."
+                "Menus, HUDs, and interaction flows built to feel intentional. "
+                "I design for the layer players actually see, not just the layer "
+                "developers build."
             )
-    with sp2:
+
+    with r2:
         with st.container(border=True):
             st.markdown(
-                f"<span style='font-size:1.2rem;'>💧</span>"
-                f"<span style='font-family:Cinzel,serif;font-size:0.72rem;"
-                f"letter-spacing:0.16em;text-transform:uppercase;"
-                f"color:{EL_HYDRO};margin-left:0.5rem;'>UI / UX Dev</span>",
+                f"<div style='font-family:JetBrains Mono,monospace;font-size:.58rem;"
+                f"letter-spacing:.16em;text-transform:uppercase;color:{EL['Anemo'][0]};"
+                f"margin-bottom:.5rem;'>🌀 &nbsp;Project Management</div>",
                 unsafe_allow_html=True,
             )
-            st.write("")
+            st.markdown("#### Coordination & Structure")
             st.write(
-                "Menus, HUDs, and editor panels. Intentional, responsive, and "
-                "clean — UI that makes a game feel polished without announcing itself."
+                "Milestone breakdowns, sprint planning, and surfacing blockers "
+                "before they compound. The invisible structure that lets "
+                "creative work happen on time."
             )
-    with sp3:
+
+    with r3:
         with st.container(border=True):
             st.markdown(
-                f"<span style='font-size:1.2rem;'>🌀</span>"
-                f"<span style='font-family:Cinzel,serif;font-size:0.72rem;"
-                f"letter-spacing:0.16em;text-transform:uppercase;"
-                f"color:{EL_ANEMO};margin-left:0.5rem;'>Project Lead</span>",
+                f"<div style='font-family:JetBrains Mono,monospace;font-size:.58rem;"
+                f"letter-spacing:.16em;text-transform:uppercase;color:{EL['AI / Tooling'][0]};"
+                f"margin-bottom:.5rem;'>⚡ &nbsp;AI Tooling</div>",
                 unsafe_allow_html=True,
             )
-            st.write("")
+            st.markdown("#### Prompt Engineering")
             st.write(
-                "Repo ownership, task breakdowns, and the coordination that keeps "
-                "a team honest under deadlines. The unglamorous work."
+                "Applying AI deliberately — knowing what questions to ask, "
+                "when to let it generate, and when to just write the thing yourself."
             )
 
-    st.divider()
+    # ── Project snapshot ──────────────────────────────────────────────────
+    rule("Project Snapshot")
+    p1, p2 = st.columns(2, gap="medium")
 
-    # ── Active Quests ──────────────────────────────────────────────────────
-    st.subheader("Active Quests")
-    st.write("")
+    with p1:
+        with st.container(border=True):
+            show_img("infinitus.jpg", "")
+            st.write("")
+            mono_tag("Active  ·  Team Project", EL["Game Dev"][0])
+            st.markdown("#### Infinitus")
+            st.write(
+                "Multiplayer battle royale in active development. "
+                "My role covers all UI/UX design and project management "
+                "for the three-person team."
+            )
+            st.button("Explore →", key="snap_inf", on_click=go, args=("Works",), use_container_width=True)
 
-    quests = [
-        ("Infinitus  ·  Multiplayer Battle Royale",  0.65, EL_PYRO),
-        ("Portfolio  ·  Public presentation",         0.40, EL_HYDRO),
-        ("CSIT 349   ·  Applied AI coursework",       0.25, EL_ANEMO),
-    ]
-    for label, pct, color in quests:
-        quest_bar(label, pct, color)
+    with p2:
+        with st.container(border=True):
+            show_img("tlgms.png", "")
+            st.write("")
+            mono_tag("Complete  ·  Solo  ·  Unity", EL["Language"][0])
+            st.markdown("#### TLGMS")
+            st.write(
+                "First solo game, built entirely in Unity. "
+                "100% self-directed from concept to shipped build — "
+                "the project that confirmed the direction."
+            )
+            st.button("Explore →", key="snap_tlg", on_click=go, args=("Works",), use_container_width=True)
 
     st.write("")
     st.info(
-        "Available for internships, game jams, and teams that need someone "
-        "who owns the full pipeline — design, code, and the merge at 2am.",
+        "Open for internship — UI/UX design, project coordination, or applied AI roles. "
+        "Graduating 2028.",
         icon="🌟",
     )
     footer()
 
-
 # ─────────────────────────────────────────────────────────────────────────────
-# AUTOBIOGRAPHY
+# PAGE — STORY
 # ─────────────────────────────────────────────────────────────────────────────
 
-def page_autobiography() -> None:
-    section_eyebrow("01")
+def page_story() -> None:
+    eyebrow("Chronicle · My Story")
     st.write("")
-    st.title("My Story")
-    st.write("*A Blackberry phone, a province childhood, and a question that never stopped pulling.*")
-    st.write("")
+    st.title("The Story So Far")
+    st.write(
+        "*From Southern Leyte to CIT-U — no roadmap, no mentor. "
+        "Just the next question and the patience to follow it.*"
+    )
+    st.divider()
 
-    main_col, side_col = st.columns([1.55, 1], gap="large")
+    narrative, timeline = st.columns([3, 2], gap="large")
 
-    with main_col:
-        tab_bg, tab_edu, tab_now = st.tabs(
-            ["  🌊  Origins  ", "  🎓  Education  ", "  ⚔️  Now  "]
+    # ── Left narrative ────────────────────────────────────────────────────
+    with narrative:
+        rule("Roots")
+        st.write(
+            "I grew up in San Juan, Southern Leyte — a province town where sea "
+            "and mountain were the closest things to the internet. "
+            "Curious kids with no mentor and no YouTube channel for everything "
+            "learn one skill fast: how to find the next question. "
+            "That habit became the engine."
         )
 
-        with tab_bg:
-            st.write("")
-            st.subheader("The Province")
-            st.write(
-                "I grew up in San Juan, Southern Leyte — sea on one side, mountains on "
-                "the other. Curious kids in the province run out of distractions fast, "
-                "which was the best thing that could have happened to me. Time to think, "
-                "take things apart, and ask questions nobody was rushing to answer."
-            )
-
-            st.subheader("The Blackberry Moment")
-            st.write(
-                "My mother brought home a Blackberry phone. I loaded Assassin's Creed on "
-                "it and something shifted — not the game, but the question underneath it: "
-                "*how does this exist?* How does something pocket-sized run a world that "
-                "detailed?"
-            )
-            st.write(
-                "That question pulled me through elementary and high school with no mentor "
-                "and no roadmap — just a kid in the province who kept finding the next "
-                "thing to learn."
-            )
-
-        with tab_edu:
-            st.write("")
-            st.subheader("Public School to CIT-U")
-            st.write(
-                "Public schools from elementary through senior high. When entrance exams "
-                "came, I passed at several state universities. Most had interviews — I got "
-                "shy and let some good offers go. CIT-U felt different: competitive in "
-                "exactly the right way."
-            )
-            st.write(
-                "Game development was already the direction. CIT-U felt like the place "
-                "where that direction could become something real. Three years in, that "
-                "instinct has held. The degree pushed my fundamentals harder than I "
-                "expected — DSA, DAA, systems design — and I am glad it did."
-            )
-
-            st.write("")
-            st.dataframe(
-                pd.DataFrame({
-                    "Stage":   ["Elementary", "Jr–Sr High", "Entrance Exams", "CIT-U"],
-                    "Detail":  [
-                        "San Juan, Southern Leyte · public school",
-                        "Self-study habit solidifies",
-                        "Passed multiple state exams · chose CIT-U",
-                        "BS Computer Science · 3rd year",
-                    ],
-                }),
-                hide_index=True,
-                use_container_width=True,
-            )
-
-        with tab_now:
-            st.write("")
-            st.subheader("Current Chapter")
-            st.write(
-                "Game development is the through-line. It touches systems programming, "
-                "UI, math, design, and the human work of making a team function. "
-                "Every layer I learn opens two more underneath — that gap is not a "
-                "problem, it is the whole point."
-            )
-            st.write(
-                "Infinitus is the proving ground: a multiplayer battle royale built from "
-                "scratch with two teammates. I own the UI, the code architecture, and the "
-                "project management. Real constraints. Real stakes."
-            )
-
-            st.write("")
-            with st.expander("Beyond code"):
-                st.write(
-                    "I play Genshin Impact, Assassin's Creed, and anything with systems "
-                    "deep enough to pick apart. Gaming is how I study design — every UI "
-                    "screen, every loading animation is a lesson in what to build next."
-                )
-
-    with side_col:
-        st.subheader("Chronicle")
-        show_timeline(MILESTONES)
-
-        st.divider()
-        st.subheader("Field Notes")
-        st.dataframe(
-            pd.DataFrame({
-                "Field": ["Hometown", "Base", "Degree", "Grad target", "Spoken", "First game"],
-                "Entry": [
-                    "San Juan, Southern Leyte",
-                    "Cebu City, Philippines",
-                    "BS Computer Science, CIT-U",
-                    "2026",
-                    "English · Filipino · Bisaya",
-                    "AC on a Blackberry",
-                ],
-            }),
-            hide_index=True,
-            use_container_width=True,
+        rule("The Pivot")
+        st.write(
+            "My mother brought home a Blackberry phone. I loaded Assassin's Creed "
+            "on it. The game was good — but the thought sitting underneath it was louder: "
+            "*how does this exist?*"
+        )
+        st.write(
+            "That question carried me through elementary, junior high, and senior high "
+            "with no formal guidance. No CS club, no programming teacher, no roadmap. "
+            "Just the question and whatever I could find on a slow connection."
         )
 
+        rule("University")
+        st.write(
+            "University entrance exams came, and I passed at several state schools. "
+            "Most had interviews — shyness cost me a few of those. "
+            "CIT-U was always the target anyway. "
+            "The computer science program ran competitive in exactly the right direction, "
+            "and game development was already where I was headed."
+        )
+        st.write(
+            "Three years in, the fundamentals hit harder than I expected — "
+            "DSA, DAA, systems thinking, algorithm analysis. I'm glad they did. "
+            "Knowing what's expensive to compute makes you ask better questions "
+            "about what's worth building at all."
+        )
+
+        rule("Now")
+        st.write(
+            "Most hours go to **Infinitus** — a multiplayer battle royale with "
+            "two teammates. My side of the table: all UI/UX design and project management. "
+            "Every interface the player touches, and every sprint that keeps us on track."
+        )
+        st.write(
+            "Outside the team project, I study interfaces seriously. "
+            "Games like Genshin Impact are research as much as entertainment — "
+            "every transition, every feedback loop, every HUD decision is a design "
+            "problem somebody already solved."
+        )
+
+        with st.expander("What I actually do outside of code"):
+            st.write(
+                "Genshin Impact, Assassin's Creed, anything with a UI worth dissecting. "
+                "At some point gaming became a form of field research. "
+                "Every game screen is a design decision I can learn from — "
+                "and occasionally steal from."
+            )
+
+    # ── Right timeline ────────────────────────────────────────────────────
+    with timeline:
+        rule("Chronicle")
+
+        milestones = [
+            ("Elementary",    "San Juan, Southern Leyte",
+             "Province life. First questions about how devices work."),
+            ("Jr / Sr High",  "Self-study solidifies",
+             "No syllabus. Research, experiments, the next question."),
+            ("Entrance Exams","Multiple state exams passed",
+             "Shyness cost a few interviews. CIT-U was always the plan."),
+            ("Year 1 — CIT-U","TLGMS",
+             "First solo game shipped in Unity. Proved I could finish something."),
+            ("Year 2 — CIT-U","Interface focus",
+             "Started studying UI/UX design seriously alongside the degree."),
+            ("Year 3 — CIT-U","Infinitus · UI/UX Lead & PM",
+             "Joined the team. Owns all design and coordination."),
+            ("2028",          "Target: Graduate",
+             "BS Computer Science — then the first professional role.", True),
+        ]
+
+        for entry in milestones:
+            year, title, note = entry[0], entry[1], entry[2]
+            future     = len(entry) > 3 and entry[3]
+            dot_color  = TXT_M if future else GOLD
+            bar_color  = BORDER if future else GOLD_D
+            txt_opacity = "opacity:.45;" if future else ""
+
+            st.markdown(
+                f"<div style='display:flex;gap:.9rem;margin-bottom:1rem;'>"
+                f"<div style='display:flex;flex-direction:column;align-items:center;"
+                f"padding-top:.28rem;'>"
+                f"<div style='width:7px;height:7px;background:{dot_color};"
+                f"clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);"
+                f"flex-shrink:0;{txt_opacity}'></div>"
+                f"<div style='flex:1;width:1px;background:{bar_color};"
+                f"margin-top:.3rem;min-height:28px;opacity:.4;'></div>"
+                f"</div>"
+                f"<div style='{txt_opacity}'>"
+                f"<div style='font-family:JetBrains Mono,monospace;font-size:.57rem;"
+                f"letter-spacing:.14em;text-transform:uppercase;color:{dot_color};"
+                f"margin-bottom:.1rem;'>{year}</div>"
+                f"<div style='font-size:.85rem;font-weight:600;color:{TXT_H};"
+                f"margin-bottom:.15rem;'>{title}</div>"
+                f"<div style='font-size:.80rem;color:{TXT_B};line-height:1.62;'>{note}</div>"
+                f"</div></div>",
+                unsafe_allow_html=True,
+            )
+
+        st.write("")
+        rule("At a Glance")
+        glance = {
+            "Hometown":   "San Juan, Southern Leyte",
+            "Based":      "Cebu City",
+            "Program":    "BS Computer Science",
+            "University": "CIT-U",
+            "Graduating": "2028",
+            "Languages":  "English · Filipino · Bisaya",
+        }
+        for k, v in glance.items():
+            st.markdown(
+                f"<div style='display:flex;gap:.6rem;justify-content:space-between;"
+                f"margin-bottom:.4rem;padding-bottom:.4rem;"
+                f"border-bottom:1px solid {BORDER};'>"
+                f"<span style='font-family:JetBrains Mono,monospace;font-size:.60rem;"
+                f"letter-spacing:.10em;text-transform:uppercase;color:{TXT_M};'>{k}</span>"
+                f"<span style='font-size:.82rem;color:{TXT_H};text-align:right;'>{v}</span>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+
+        st.write("")
         st.info(f"Section {SECTION}  ·  {INSTRUCTOR}", icon="📌")
 
     footer()
 
-
 # ─────────────────────────────────────────────────────────────────────────────
-# SKILLS  — Vision-panel layout, element affinity chart
+# PAGE — SKILLS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def page_skills() -> None:
-    section_eyebrow("02")
+    eyebrow("Vision · Skills")
     st.write("")
     st.title("Skills")
-    st.write(
-        "*Each skill is grouped under a Vision element — a domain metaphor. "
-        "Scores are honest self-assessment: 90 = do it in the dark; 70 = ship with docs open.*"
+    st.markdown(
+        "> *Each category maps to a Genshin Vision element — its domain. "
+        "Scores are self-assessed and honest: 90 means I reach for it without thinking; "
+        "70 means the documentation is open in another tab.*"
     )
-    st.write("")
+    st.divider()
 
-    skill_df = pd.DataFrame(SKILLS, columns=["Skill", "Score", "Category"])
-    cats = skill_df["Category"].unique().tolist()
+    # ── Vision panels ─────────────────────────────────────────────────────
+    skill_df  = pd.DataFrame(SKILLS, columns=["Skill", "Score", "Category"])
+    cats      = list(dict.fromkeys(r["Category"] for _, r in skill_df.iterrows()))
 
-    # Vision panels — 2 per row
     for i in range(0, len(cats), 2):
-        pair = cats[i : i + 2]
+        pair = cats[i: i + 2]
         cols = st.columns(len(pair), gap="medium")
         for col, cat in zip(cols, pair):
             with col:
@@ -819,418 +868,401 @@ def page_skills() -> None:
                 vision_panel(cat, rows)
         st.write("")
 
-    st.divider()
-
-    # ── Element Affinity chart ─────────────────────────────────────────────
-    st.subheader("Element Affinity")
-    st.caption("Average mastery per Vision domain")
+    # ── Affinity chart ────────────────────────────────────────────────────
+    rule("Element Affinity Chart")
+    st.caption("Average proficiency per Vision domain")
     st.write("")
 
-    avg_df = (
-        skill_df.groupby("Category", as_index=False)["Score"]
-        .mean().round(1)
+    avg = (
+        skill_df
+        .groupby("Category", as_index=False)["Score"]
+        .mean()
+        .round(1)
     )
-    avg_df["Element"] = avg_df["Category"].map(
-        lambda c: ELEM_MAP.get(c, {}).get("name", c)
-    )
-    avg_df["Color"] = avg_df["Category"].map(
-        lambda c: ELEM_MAP.get(c, {}).get("color", C_GOLD)
-    )
-    sorted_avg = avg_df.sort_values("Score", ascending=False)
+    avg["Element"] = avg["Category"].map(lambda c: EL.get(c, (GOLD, c, ""))[1])
+    avg["Icon"]    = avg["Category"].map(lambda c: EL.get(c, (GOLD, c, ""))[2])
+    avg["Color"]   = avg["Category"].map(lambda c: EL.get(c, (GOLD, c, ""))[0])
+    avg["Label"]   = avg["Element"] + " " + avg["Icon"]
+    avg = avg.sort_values("Score", ascending=False)
 
     chart = (
-        alt.Chart(sorted_avg)
-        .mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3, size=38)
+        alt.Chart(avg)
+        .mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3, size=44)
         .encode(
             x=alt.X(
-                "Element:N",
-                sort=sorted_avg["Element"].tolist(),
+                "Label:N",
+                sort=avg["Label"].tolist(),
                 axis=alt.Axis(
-                    labelFont="JetBrains Mono", labelColor=C_TEXT_M,
+                    labelFont="JetBrains Mono", labelColor=TXT_B,
                     labelFontSize=11, labelAngle=0, title=None,
-                    tickColor=C_DIVIDER, domainColor=C_DIVIDER,
+                    tickColor=BORDER, domainColor=BORDER,
                 ),
             ),
             y=alt.Y(
                 "Score:Q",
                 scale=alt.Scale(domain=[0, 100]),
                 axis=alt.Axis(
-                    labelFont="JetBrains Mono", labelColor=C_TEXT_M,
-                    labelFontSize=10, gridColor=C_DIVIDER,
-                    domainColor=C_DIVIDER, title=None,
+                    labelFont="JetBrains Mono", labelColor=TXT_M,
+                    labelFontSize=10, gridColor=BORDER,
+                    domainColor=BORDER, title=None,
                 ),
             ),
             color=alt.Color("Color:N", scale=None, legend=None),
             tooltip=[
                 alt.Tooltip("Element:N",  title="Vision"),
-                alt.Tooltip("Score:Q",    title="Avg", format=".1f"),
                 alt.Tooltip("Category:N", title="Domain"),
+                alt.Tooltip("Score:Q",    title="Avg", format=".1f"),
             ],
         )
-        .properties(height=240, background=C_PANEL)
+        .properties(height=240, background=PANEL)
         .configure_view(strokeWidth=0)
     )
     st.altair_chart(chart, use_container_width=True)
 
-    st.divider()
-    st.subheader("Approach")
+    # ── Philosophy ────────────────────────────────────────────────────────
+    rule("Approach")
     st.write("")
+    a1, a2 = st.columns(2, gap="medium")
 
-    ap1, ap2 = st.columns(2, gap="medium")
-    with ap1:
+    with a1:
         with st.container(border=True):
-            st.markdown("#### Docs before forums")
+            mono_tag("Study the interface, not just the code", EL["Web"][0])
+            st.write("")
+            st.markdown("#### Design instinct over syntax recall")
             st.write(
-                "Most of what I know came from source code and documentation, not tutorials. "
-                "When something breaks I trace the stack first. "
-                "DSA and DAA from the degree made that instinct systematic."
-            )
-    with ap2:
-        with st.container(border=True):
-            st.markdown("#### Own the full pipeline")
-            st.write(
-                "On Infinitus I write code, design UI, manage the repo, and coordinate "
-                "the team. I don't wait for someone else to do the hard part — "
-                "that's where the real learning is."
+                "My strongest pull is toward the user-facing layer — why a design "
+                "decision was made, not only what it looks like. "
+                "Game UIs are the best teacher for this: every pixel is deliberate."
             )
 
-    with st.expander("A loop I keep coming back to"):
-        st.code(
-            """\
-# The heartbeat under every project I build
-while running:
-    dt = clock.tick(TARGET_FPS) / 1000.0
-
-    process_input()          # read from controller / mouse / touch
-    update_state(dt)         # physics, UI state, game logic
-    render(state)            # draw this frame
-
-    if debug_overlay:
-        draw_fps_and_stats()
-""",
-            language="python",
-        )
-        st.caption("Illustrative — the pattern matters more than the file.")
+    with a2:
+        with st.container(border=True):
+            mono_tag("Keep the team in motion", EL["Anemo"][0])
+            st.write("")
+            st.markdown("#### Coordination as a skill")
+            st.write(
+                "On Infinitus I hold the structure together — tasks broken down, "
+                "priorities visible, blockers surfaced early. "
+                "Good coordination is what makes the design work possible."
+            )
 
     footer()
 
-
 # ─────────────────────────────────────────────────────────────────────────────
-# PROJECTS  — Quest Archive layout
+# PAGE — WORKS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def page_projects() -> None:
-    section_eyebrow("03")
+def page_works() -> None:
+    eyebrow("Codex · Works")
     st.write("")
-    st.title("Projects")
+    st.title("Works")
     st.write(
-        "*Two games. The first proves I can build from nothing. "
-        "The second proves I can lead a team.*"
+        "*Two projects. One is an active team effort I help lead. "
+        "The other I built alone, start to finish.*"
     )
-    st.write("")
+    st.divider()
 
-    tab_inf, tab_tlgms, tab_open = st.tabs([
-        "  ⚔️  Infinitus  ",
-        "  🌀  TLGMS  ",
-        "  ◈  Open Field  ",
-    ])
+    # ── Tab navigation ────────────────────────────────────────────────────
+    tab_inf, tab_tlg = st.tabs(["  Infinitus  ", "  TLGMS  "])
 
-    # ── Infinitus ──────────────────────────────────────────────────────────
+    # ── INFINITUS tab ─────────────────────────────────────────────────────
     with tab_inf:
         st.write("")
-        img_c, txt_c = st.columns([1.05, 1], gap="large")
-        with img_c:
-            show_image("infinitus.jpg", "Infinitus — battle royale")
-        with txt_c:
-            st.markdown(
-                f"<span style='font-family:JetBrains Mono,monospace;font-size:0.65rem;"
-                f"letter-spacing:0.14em;color:{EL_PYRO};text-transform:uppercase;'>"
-                f"🔥  Active · Game Dev · Team</span>",
-                unsafe_allow_html=True,
-            )
-            st.subheader("Infinitus")
-            st.write(
-                "A top-down multiplayer battle royale built from scratch with two teammates. "
-                "I own the UI systems, core game logic, visual design, and day-to-day "
-                "project direction — the full stack of what it takes to ship a game."
-            )
+        img_col, desc_col = st.columns([1, 1], gap="large")
+
+        with img_col:
+            show_img("infinitus.jpg", "Infinitus — battle royale")
             st.write("")
-            st.markdown("**Role**")
-            st.write("UI Developer · Programmer · Project Manager")
-            st.markdown("**Stack**")
-            show_tags(["Godot 4", "C#", "GDScript", "Git"])
+            pill_row([
+                ("Active",       EL["Game Dev"][0]),
+                ("Team · 3 pax", EL["Web"][0]),
+                ("UI/UX · PM",   EL["Anemo"][0]),
+            ])
+            st.write("")
+            mono_tag("Tech stack", TXT_M)
+            pill_row([
+                ("C#",    TXT_B),
+                ("Figma", TXT_B),
+                ("Git",   TXT_B),
+            ])
+
+        with desc_col:
+            st.markdown("## Infinitus")
+            st.write(
+                "A top-down multiplayer battle royale in active development. "
+                "The game is programmed by Glenshayne Belarmino and Wilmark Racho — "
+                "I joined the team to own the UI/UX and project management layer: "
+                "everything the player sees and everything that keeps the team on schedule."
+            )
+
+            rule("My Responsibilities")
+
+            resp_a, resp_b = st.columns(2, gap="medium")
+            with resp_a:
+                with st.container(border=True):
+                    mono_tag("🎨  UI / UX Design", EL["Web"][0])
+                    st.write("")
+                    st.write(
+                        "Full in-game interface design: main menus, HUD layout, "
+                        "overlay systems, feedback animations. "
+                        "The visual language of the game from the player's side."
+                    )
+            with resp_b:
+                with st.container(border=True):
+                    mono_tag("🌀  Project Management", EL["Anemo"][0])
+                    st.write("")
+                    st.write(
+                        "Sprint planning, task breakdown, milestone tracking. "
+                        "Keeping three people aligned and surfacing blockers "
+                        "before they become delays."
+                    )
+
+            rule("Team")
+            t1, t2, t3 = st.columns(3)
+            t1.metric("Kurt M.",        "UI/UX · PM",   "Design + Coordination")
+            t2.metric("Glenshayne B.",  "Programmer",   "Core systems")
+            t3.metric("Wilmark R.",     "Programmer",   "Game logic")
+
             st.write("")
             st.link_button("⌥  View on GitHub", GITHUB, use_container_width=True)
 
-        st.divider()
-        d1, d2 = st.columns(2)
-        with d1:
-            st.markdown("**What I built**")
-            st.markdown(
-                "- All UI: menus, HUD, overlays, scene flow\n"
-                "- Core game logic: input → state → render\n"
-                "- Project management: tasks, milestones, alignment"
-            )
-        with d2:
-            st.markdown("**How I led it**")
-            st.markdown(
-                "- Full repository ownership: merges, rebases, CI\n"
-                "- Art direction and visual asset creation\n"
-                "- Architecture decisions for long-term stability"
-            )
-        st.caption("Team: Glenshayne Belarmino · Wilmark Racho · Kurt Justin Malubay")
-
-    # ── TLGMS ──────────────────────────────────────────────────────────────
-    with tab_tlgms:
+    # ── TLGMS tab ─────────────────────────────────────────────────────────
+    with tab_tlg:
         st.write("")
-        img_c, txt_c = st.columns([1.05, 1], gap="large")
-        with img_c:
-            show_image("tlgms.png", "TLGMS — first prototype")
-        with txt_c:
-            st.markdown(
-                f"<span style='font-family:JetBrains Mono,monospace;font-size:0.65rem;"
-                f"letter-spacing:0.14em;color:{EL_ANEMO};text-transform:uppercase;'>"
-                f"🌀  Prototype · Solo · Year 1</span>",
-                unsafe_allow_html=True,
-            )
-            st.subheader("TLGMS")
+        desc_col, img_col = st.columns([1, 1], gap="large")
+
+        with desc_col:
+            st.markdown("## TLGMS")
             st.write(
-                "My first game prototype — built after Year 1 to prove I could take an idea "
-                "from nothing to something playable. Not about polish; about proof of concept. "
-                "The moment game dev stopped being a hobby and became a direction."
+                "My first game — built entirely alone. TLGMS was never about shipping "
+                "a polished commercial product. It was about proving that I could take "
+                "something from concept all the way to a playable build by myself. "
+                "Every decision, every line of code, every asset: mine."
             )
-            st.write("")
-            st.markdown("**Role**")
-            st.write("Solo Developer — design, code, art, audio")
-            st.markdown("**Stack**")
-            show_tags(["Godot", "GDScript"])
+
+            rule("Role & Contribution")
+            with st.container(border=True):
+                mono_tag("◇  Solo Developer  ·  100% Contribution", EL["Language"][0])
+                st.write("")
+                kv_pairs = [
+                    ("Engine",   "Unity"),
+                    ("Language", "C#"),
+                    ("Design",   "Concept, mechanics, UX flow — self-directed"),
+                    ("Art",      "All game assets created from scratch"),
+                    ("Outcome",  "Shipped a playable build"),
+                ]
+                for k, v in kv_pairs:
+                    st.markdown(
+                        f"<div style='display:flex;gap:.8rem;margin-bottom:.4rem;"
+                        f"padding-bottom:.4rem;border-bottom:1px solid {BORDER};'>"
+                        f"<span style='font-family:JetBrains Mono,monospace;font-size:.60rem;"
+                        f"letter-spacing:.10em;text-transform:uppercase;color:{TXT_M};"
+                        f"min-width:64px;'>{k}</span>"
+                        f"<span style='font-size:.82rem;color:{TXT_H};'>{v}</span>"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
+
+            rule("What It Proved")
+            st.write(
+                "You can ship a game alone. You can learn an engine from documentation. "
+                "Curiosity is enough to start — discipline is what finishes it. "
+                "TLGMS turned game development from an interest into a commitment."
+            )
+
             st.write("")
             st.link_button("🎮  Play on itch.io", ITCH, use_container_width=True)
 
-        st.divider()
-        st.markdown("**What I built**")
-        st.markdown(
-            "- Everything solo: mechanics, UI, scene flow, assets\n"
-            "- Learned Godot entirely from documentation\n"
-            "- Shipped a playable build — first real proof of concept\n"
-            "- The project that set the entire direction"
-        )
+        with img_col:
+            show_img("tlgms.png", "TLGMS — solo Unity project")
+            st.write("")
+            pill_row([
+                ("Complete",    EL["Language"][0]),
+                ("Solo",        EL["Language"][0]),
+                ("Unity",       EL["Game Dev"][0]),
+                ("100%",        GOLD),
+            ])
 
-    # ── Open Field ─────────────────────────────────────────────────────────
-    with tab_open:
-        st.write("")
-        st.subheader("Looking Ahead")
-        st.write("")
+    # ── Availability ──────────────────────────────────────────────────────
+    st.divider()
+    rule("Open Field")
+    av1, av2 = st.columns(2, gap="medium")
 
-        col_a, col_b = st.columns(2, gap="medium")
-        with col_a:
-            with st.container(border=True):
-                st.markdown("#### 🌟  Open for Internship")
-                st.write(
-                    "Actively seeking an internship with real problems and "
-                    "experienced teammates. I learn fast when the work matters."
-                )
-                st.write("")
-                st.link_button("✉  Get in touch", f"mailto:{EMAIL}", use_container_width=True)
-        with col_b:
-            with st.container(border=True):
-                st.markdown("#### ⚔️  Game Jams")
-                st.write(
-                    "Always open to jam teams that actually ship. "
-                    "I bring code architecture, UI, and the discipline "
-                    "to scope a project that finishes."
-                )
-                st.write("")
-                st.link_button("🎮  itch.io profile", ITCH, use_container_width=True)
-
-        st.write("")
+    with av1:
         with st.container(border=True):
-            st.markdown("#### What I bring")
-            c1, c2, c3 = st.columns(3)
-            c1.metric("Ownership",  "100%", "of whatever I touch")
-            c2.metric("Codebase",   "90%+", "authored on team projects")
-            c3.metric("Shipped",    "2",    "playable games")
+            mono_tag("🌟  Open for Internship", GOLD)
+            st.write("")
+            st.markdown("#### Seeking a real problem to work on")
+            st.write(
+                "UI/UX design, product work, or any role where coordination "
+                "and design overlap. I learn fast when the stakes are real."
+            )
+            st.link_button("✉  Reach out", f"mailto:{EMAIL}", use_container_width=True)
+
+    with av2:
+        with st.container(border=True):
+            mono_tag("⚔  Game Jams", EL["Game Dev"][0])
+            st.write("")
+            st.markdown("#### Teams that plan to finish")
+            st.write(
+                "Open to jam teams that commit to shipping. "
+                "I bring design thinking, project structure, and the "
+                "drive to get something playable before the deadline."
+            )
+            st.link_button("🎮  itch.io", ITCH, use_container_width=True)
 
     footer()
 
-
 # ─────────────────────────────────────────────────────────────────────────────
-# CONTACT  — Dispatch Terminal (completely original layout)
+# PAGE — CONNECT
 # ─────────────────────────────────────────────────────────────────────────────
 
-def page_contact() -> None:
-    section_eyebrow("04")
+def page_connect() -> None:
+    eyebrow("Summon · Connect")
     st.write("")
-    st.title("Contact")
+    st.title("Connect")
     st.write(
-        "*Internship, collaboration, game jam invite, or just curiosity — "
-        "all of those are worth a message.*"
+        "*Internship, collab, jam, or just a message — all worth reaching out about.*"
     )
-    st.write("")
+    st.divider()
 
-    left_col, right_col = st.columns([1.45, 1], gap="large")
+    left_col, right_col = st.columns([1, 1.6], gap="large")
 
-    # ── LEFT: message form ─────────────────────────────────────────────────
+    # ── Left: channels ────────────────────────────────────────────────────
     with left_col:
-        st.subheader("Send a Dispatch")
+        rule("Direct Channels")
         st.write("")
 
-        with st.container(border=True):
-            with st.form("dispatch_form", clear_on_submit=True):
-                # Sender
-                st.markdown("**Identify yourself**")
-                n_col, e_col = st.columns(2)
-                sender_name  = n_col.text_input("Name",  placeholder="Your name")
-                sender_email = e_col.text_input("Email", placeholder="your@email.com")
-
-                st.write("")
-
-                # Dispatch type — radio is visually distinct from the sample's selectbox
-                st.markdown("**Type of dispatch**")
-                dtype = st.radio(
-                    "dispatch_type",
-                    ["💼  Internship / Work",
-                     "⚔️  Game Jam or Collab",
-                     "🗺️  Project Feedback",
-                     "👋  Just saying hi"],
-                    label_visibility="collapsed",
-                    horizontal=False,
-                )
-
-                st.write("")
-
-                # Message
-                st.markdown("**Message**")
-                message = st.text_area(
-                    "message_body",
-                    placeholder="What are you building? What do you need? What caught your eye?",
-                    height=120,
-                    label_visibility="collapsed",
-                )
-
-                st.write("")
-                can_reply = st.checkbox("Reply to my email address above")
-
-                submitted = st.form_submit_button(
-                    "✦  Transmit Message",
-                    use_container_width=True,
-                )
-
-        # ── Form result handling ───────────────────────────────────────────
-        if submitted:
-            problems = []
-            if not sender_name.strip():
-                problems.append("Name is required.")
-            if not message.strip():
-                problems.append("Message cannot be empty.")
-            if can_reply and ("@" not in sender_email or "." not in sender_email.split("@")[-1]):
-                problems.append("Email address looks invalid.")
-
-            for p in problems:
-                st.warning(p, icon="⚠️")
-
-            if not problems:
-                st.session_state.setdefault("dispatches", []).append(
-                    {
-                        "sender":  sender_name.strip(),
-                        "email":   sender_email.strip() or "—",
-                        "type":    dtype,
-                        "message": message.strip(),
-                        "reply":   can_reply,
-                        "at":      datetime.now().strftime("%H:%M"),
-                    }
-                )
-                st.success(
-                    f"Dispatch received, {sender_name.strip()}. "
-                    "Note: this app has no mail backend — messages exist in this "
-                    "session only. Use the email link on the right for a real reply.",
-                    icon="📨",
-                )
-
-    # ── RIGHT: coordinates + info ──────────────────────────────────────────
-    with right_col:
-        st.subheader("Signal Coordinates")
-        st.write("")
-
-        with st.container(border=True):
+        channels = [
+            ("✉  Email",     EMAIL,              f"mailto:{EMAIL}",  "Primary · fastest reply",    GOLD),
+            ("◇  GitHub",    "KurtJustinMalubay", GITHUB,            "Source code & projects",      EL["Language"][0]),
+            ("🎮  itch.io",  "sashimiproductions", ITCH,             "Published games",             EL["Game Dev"][0]),
+        ]
+        for label, handle, url, note, color in channels:
             st.markdown(
-                f"<div style='display:grid;gap:0.9rem;'>"
-                f"<div>"
-                f"  <div style='font-family:JetBrains Mono,monospace;font-size:0.60rem;"
-                f"  letter-spacing:0.14em;text-transform:uppercase;color:{C_TEXT_M};'>"
-                f"  Email</div>"
-                f"  <div style='font-size:0.88rem;color:{C_TEXT_H};margin-top:0.15rem;'>"
-                f"  {EMAIL}</div>"
-                f"</div>"
-                f"<div>"
-                f"  <div style='font-family:JetBrains Mono,monospace;font-size:0.60rem;"
-                f"  letter-spacing:0.14em;text-transform:uppercase;color:{C_TEXT_M};'>"
-                f"  GitHub</div>"
-                f"  <div style='font-size:0.88rem;color:{C_TEXT_H};margin-top:0.15rem;'>"
-                f"  KurtJustinMalubay</div>"
-                f"</div>"
-                f"<div>"
-                f"  <div style='font-family:JetBrains Mono,monospace;font-size:0.60rem;"
-                f"  letter-spacing:0.14em;text-transform:uppercase;color:{C_TEXT_M};'>"
-                f"  Games</div>"
-                f"  <div style='font-size:0.88rem;color:{C_TEXT_H};margin-top:0.15rem;'>"
-                f"  sashimiproductions.itch.io</div>"
-                f"</div>"
+                f"<div style='background:{PANEL};border:1px solid {BORDER};"
+                f"border-left:3px solid {color};border-radius:4px;"
+                f"padding:.85rem 1rem;margin-bottom:.7rem;'>"
+                f"<div style='font-family:Cinzel,serif;font-size:.68rem;"
+                f"letter-spacing:.16em;text-transform:uppercase;color:{color};"
+                f"margin-bottom:.25rem;'>{label}</div>"
+                f"<div style='font-family:JetBrains Mono,monospace;font-size:.72rem;"
+                f"color:{TXT_H};margin-bottom:.2rem;'>{handle}</div>"
+                f"<div style='font-family:JetBrains Mono,monospace;font-size:.58rem;"
+                f"color:{TXT_M};letter-spacing:.06em;'>{note}</div>"
                 f"</div>",
                 unsafe_allow_html=True,
             )
+            st.link_button(f"Open {label.split()[1]} →", url, use_container_width=True)
             st.write("")
-            st.link_button("✉  Open email client",     f"mailto:{EMAIL}", use_container_width=True)
-            st.link_button("⌥  Open GitHub",            GITHUB,            use_container_width=True)
-            st.link_button("🎮  Open itch.io",           ITCH,              use_container_width=True)
 
         res = load_resume()
         if res:
             rb, rfn, rmt = res
-            st.download_button("⬇  Download Résumé", rb, file_name=rfn, mime=rmt,
-                               use_container_width=True)
-
-        st.write("")
-        with st.container(border=True):
-            st.markdown("#### What I'm looking for")
-            st.write(
-                "An internship with real constraints and experienced teammates. "
-                "A jam team that plans to finish. Any project where owning the "
-                "whole pipeline — code, UI, coordination — is the job."
+            st.download_button(
+                "⬇  Download Résumé", rb,
+                file_name=rfn, mime=rmt,
+                use_container_width=True,
             )
 
-        st.write("")
-        st.caption("Response time · usually within 24 hours")
-        st.caption("Fastest reply topic · anything about Genshin Impact")
-
-    # ── Dispatch Log ───────────────────────────────────────────────────────
-    log = st.session_state.get("dispatches", [])
-    if log:
         st.divider()
-        st.subheader("Dispatch Log")
-        st.caption("Session-only · nothing is stored or sent")
+        rule("What I'm Looking For")
+        with st.container(border=True):
+            st.write(
+                "An internship where UI/UX design, project coordination, or applied "
+                "AI work is the actual role — not a footnote. "
+                "Real problems, experienced teammates. "
+                "Graduating 2028; available now for part-time or remote work."
+            )
         st.write("")
-        for entry in reversed(log):
-            with st.container(border=True):
-                hdr_l, hdr_r = st.columns([4, 1])
-                hdr_l.markdown(f"**{entry['sender']}**  ·  {entry['type'].split('  ')[1] if '  ' in entry['type'] else entry['type']}")
-                hdr_r.caption(entry["at"])
-                st.write(entry["message"])
-                if entry["reply"]:
-                    st.caption(f"Reply to: {entry['email']}")
+        st.caption("Response time  ·  within 24 hours")
+        st.caption("Best topic opener  ·  Genshin Impact or game design")
+
+    # ── Right: form ───────────────────────────────────────────────────────
+    with right_col:
+        rule("Send a Message")
         st.write("")
-        if st.button("Clear log"):
-            st.session_state["dispatches"] = []
-            st.rerun()
+
+        with st.container(border=True):
+            with st.form("contact_form", clear_on_submit=True):
+                name_field = st.text_input(
+                    "Your name",
+                    placeholder="Who's reaching out?",
+                )
+                reason_field = st.selectbox(
+                    "Purpose",
+                    options=[
+                        "💼  Internship / work opportunity",
+                        "⚔  Game jam or collaboration",
+                        "🎨  Design or UI feedback",
+                        "💬  General question",
+                        "👋  Just saying hello",
+                    ],
+                )
+                msg_field = st.text_area(
+                    "Message",
+                    placeholder=(
+                        "What are you building? What do you need? "
+                        "What caught your eye?"
+                    ),
+                    height=150,
+                )
+                email_field = st.text_input(
+                    "Your email  (optional — only if you want a reply)",
+                    placeholder="you@example.com",
+                )
+                submitted = st.form_submit_button(
+                    "Send  ✦", use_container_width=True, type="primary"
+                )
+
+        if submitted:
+            errors = []
+            if not name_field.strip():
+                errors.append("A name would help me address my reply.")
+            if not msg_field.strip():
+                errors.append("The message is empty.")
+            for err in errors:
+                st.warning(err, icon="⚠️")
+            if not errors:
+                st.session_state.setdefault("msgs", []).append({
+                    "name":    name_field.strip(),
+                    "reason":  reason_field,
+                    "message": msg_field.strip(),
+                    "email":   email_field.strip() or "—",
+                    "at":      datetime.now().strftime("%H:%M · %d %b"),
+                })
+                st.success(
+                    f"Received, {name_field.strip()}. "
+                    "Messages are stored in this session only — "
+                    "use a direct channel on the left for a guaranteed reply.",
+                    icon="📨",
+                )
+
+        # ── Session log ───────────────────────────────────────────────
+        log = st.session_state.get("msgs", [])
+        if log:
+            rule("Message Log  ·  Session Only")
+            for entry in reversed(log):
+                with st.container(border=True):
+                    top, ts = st.columns([5, 2])
+                    top.markdown(f"**{entry['name']}**")
+                    ts.caption(entry["at"])
+                    st.caption(entry["reason"])
+                    st.write(entry["message"])
+                    if entry["email"] != "—":
+                        st.caption(f"Reply to: {entry['email']}")
+            st.write("")
+            if st.button("Clear log", key="clear_log"):
+                st.session_state["msgs"] = []
+                st.rerun()
 
     footer()
 
-
 # ─────────────────────────────────────────────────────────────────────────────
-# Router
+# ROUTER
 # ─────────────────────────────────────────────────────────────────────────────
-if   page == "Home":          page_home()
-elif page == "Autobiography":  page_autobiography()
-elif page == "Skills":         page_skills()
-elif page == "Projects":       page_projects()
-else:                          page_contact()
+if   page == "Home":    page_home()
+elif page == "Story":   page_story()
+elif page == "Skills":  page_skills()
+elif page == "Works":   page_works()
+else:                   page_connect()
