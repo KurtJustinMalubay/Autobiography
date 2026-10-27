@@ -1,703 +1,853 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
+"""
+Kurt Justin J. Malubay | Autobiography & Portfolio
+CSIT 349 - Applied AI | Streamlit app
 
-# ─── Page Config ────────────────────────────────────────────────────────────────
+Run with:  streamlit run app.py
+
+Expected structure:
+root/
+  assets/  (profile.jpg, infinitus.jpg, tlgms.jpg, devvault.jpg)
+  app.py
+  requirements.txt
+"""
+
+from pathlib import Path
+from urllib.parse import quote
+
+import numpy as np
+import pandas as pd
+import streamlit as st
+
+# ---------------------------------------------------------------------------
+# 1. PAGE CONFIG (must be the first Streamlit call)
+# ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="Kurt Justin J. Malubay | Portfolio",
     page_icon="⚔️",
     layout="wide",
 )
 
-# ─── Global Theme / CSS ──────────────────────────────────────────────────────────
-st.markdown("""
-<style>
-/* ── Import Fonts ── */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+# Session state for routing
+if "page" not in st.session_state:
+    st.session_state.page = "Home"
 
-/* ── Base ── */
-html, body, [class*="css"] {
-    background-color: #0d1117 !important;
-    color: #c9d1d9 !important;
+ASSETS = Path(__file__).parent / "assets"
+
+# ---------------------------------------------------------------------------
+# 2. DATA
+# ---------------------------------------------------------------------------
+PROFILE = {
+    "name": "Kurt Justin J. Malubay",
+    "nickname": "Kurt",
+    "initials": "KJ",
+    "program": "BSCS 3 - F1",
+    "grad": "2028",
+    "status": "CHED Merit Scholar",
+    "email": "justinkurt837@gmail.com",
+    "phone": "09928330407",
+    "github": "https://github.com/KurtJustinMalubay",
+    "itch": "https://sashimiproductions.itch.io/",
 }
 
-/* ── Hide default Streamlit chrome ── */
-#MainMenu, footer, header { visibility: hidden; }
-
-/* ── Main container ── */
-.block-container {
-    padding: 2rem 3rem 4rem 3rem !important;
-    max-width: 1200px;
-}
-
-/* ── Sidebar ── */
-section[data-testid="stSidebar"] {
-    background-color: #0a0e14 !important;
-    border-right: 1px solid #1c2333;
-}
-section[data-testid="stSidebar"] * { color: #c9d1d9 !important; }
-
-/* ── Typography ── */
-h1, h2, h3 {
-    font-family: 'Cinzel', serif !important;
-    color: #e8d5a3 !important;
-    letter-spacing: 0.02em;
-}
-h1 { font-size: 2.2rem !important; font-weight: 700 !important; }
-h2 { font-size: 1.4rem !important; font-weight: 600 !important; }
-h3 { font-size: 1.1rem !important; font-weight: 600 !important; }
-p, li, span, label, .stMarkdown {
-    font-family: 'Inter', sans-serif !important;
-    font-size: 0.92rem !important;
-    line-height: 1.7 !important;
-    color: #c9d1d9 !important;
-}
-
-/* ── Divider ── */
-hr { border-color: #1c2333 !important; margin: 1.5rem 0 !important; }
-
-/* ── Cards ── */
-.card {
-    background: #161b22;
-    border: 1px solid #1c2333;
-    border-radius: 8px;
-    padding: 1.4rem 1.6rem;
-    margin-bottom: 1rem;
-}
-.card-gold {
-    background: #12181f;
-    border: 1px solid #3d3018;
-    border-left: 3px solid #e8d5a3;
-    border-radius: 0 8px 8px 0;
-    padding: 1.2rem 1.5rem;
-    margin-bottom: 1rem;
-}
-.badge {
-    display: inline-block;
-    background: #1c2333;
-    border: 1px solid #2d3748;
-    border-radius: 4px;
-    padding: 2px 10px;
-    font-size: 0.75rem !important;
-    color: #a8b3c1 !important;
-    margin-right: 6px;
-    margin-bottom: 4px;
-    font-family: 'Inter', sans-serif !important;
-}
-.tag-gold {
-    display: inline-block;
-    background: #1e1a0f;
-    border: 1px solid #4a3c1a;
-    border-radius: 4px;
-    padding: 2px 10px;
-    font-size: 0.75rem !important;
-    color: #e8d5a3 !important;
-    margin-right: 6px;
-    margin-bottom: 4px;
-    font-family: 'Inter', sans-serif !important;
-}
-
-/* ── Metric cards ── */
-[data-testid="metric-container"] {
-    background: #161b22 !important;
-    border: 1px solid #1c2333 !important;
-    border-radius: 8px !important;
-    padding: 1rem 1.2rem !important;
-}
-[data-testid="metric-container"] label {
-    color: #8b949e !important;
-    font-size: 0.78rem !important;
-    font-family: 'Inter', sans-serif !important;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
-[data-testid="metric-container"] [data-testid="stMetricValue"] {
-    color: #e8d5a3 !important;
-    font-family: 'Cinzel', serif !important;
-    font-size: 1.4rem !important;
-}
-
-/* ── Tabs ── */
-.stTabs [data-baseweb="tab-list"] {
-    background: transparent !important;
-    border-bottom: 1px solid #1c2333 !important;
-    gap: 0 !important;
-}
-.stTabs [data-baseweb="tab"] {
-    background: transparent !important;
-    color: #8b949e !important;
-    font-family: 'Inter', sans-serif !important;
-    font-size: 0.85rem !important;
-    font-weight: 500 !important;
-    padding: 0.6rem 1.4rem !important;
-    border: none !important;
-    border-bottom: 2px solid transparent !important;
-}
-.stTabs [aria-selected="true"] {
-    color: #e8d5a3 !important;
-    border-bottom: 2px solid #e8d5a3 !important;
-    background: transparent !important;
-}
-
-/* ── Buttons ── */
-.stButton > button {
-    background: transparent !important;
-    color: #e8d5a3 !important;
-    border: 1px solid #4a3c1a !important;
-    border-radius: 5px !important;
-    font-family: 'Inter', sans-serif !important;
-    font-size: 0.85rem !important;
-    padding: 0.4rem 1.2rem !important;
-    transition: background 0.15s ease;
-}
-.stButton > button:hover {
-    background: #1e1a0f !important;
-}
-
-/* ── Inputs ── */
-.stTextInput > div > input,
-.stTextArea > div > textarea,
-.stSelectbox > div,
-.stRadio > div {
-    background-color: #161b22 !important;
-    border-color: #1c2333 !important;
-    color: #c9d1d9 !important;
-    font-family: 'Inter', sans-serif !important;
-    border-radius: 6px !important;
-}
-
-/* ── Slider ── */
-.stSlider [data-baseweb="slider"] div[role="slider"] {
-    background-color: #e8d5a3 !important;
-}
-
-/* ── DataFrame ── */
-.stDataFrame { border-radius: 8px; overflow: hidden; }
-.stDataFrame table {
-    background: #161b22 !important;
-    color: #c9d1d9 !important;
-    border-color: #1c2333 !important;
-}
-
-/* ── Section hero ── */
-.hero-name {
-    font-family: 'Cinzel', serif !important;
-    font-size: 2.6rem !important;
-    font-weight: 700 !important;
-    color: #e8d5a3 !important;
-    line-height: 1.2;
-    margin-bottom: 0.2rem;
-}
-.hero-sub {
-    font-family: 'Inter', sans-serif !important;
-    font-size: 0.95rem !important;
-    color: #8b949e !important;
-    margin-bottom: 1.2rem;
-}
-.section-label {
-    font-family: 'Inter', sans-serif !important;
-    font-size: 0.7rem !important;
-    color: #e8d5a3 !important;
-    letter-spacing: 0.15em !important;
-    text-transform: uppercase;
-    margin-bottom: 0.4rem;
-    opacity: 0.7;
-}
-.internship-callout {
-    background: linear-gradient(135deg, #12181f 0%, #0d1117 100%);
-    border: 1px solid #2d3018;
-    border-left: 3px solid #e8d5a3;
-    border-radius: 0 8px 8px 0;
-    padding: 1.5rem 2rem;
-    margin-top: 1rem;
-}
-.internship-callout p {
-    color: #c9d1d9 !important;
-    font-style: italic;
-    font-size: 0.93rem !important;
-    line-height: 1.8 !important;
-    margin: 0;
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-# ─── Sidebar ────────────────────────────────────────────────────────────────────
-with st.sidebar:
-    # Profile image
-    import os
-    profile_path = "assets/profile.jpg"
-    if os.path.exists(profile_path):
-        st.image(profile_path, use_container_width=True, caption="Kurt Justin J. Malubay")
-    else:
-        st.image(
-            "https://via.placeholder.com/300x300/161b22/e8d5a3?text=KJM",
-            use_container_width=True,
-            caption="Kurt Justin J. Malubay",
-        )
-
-    st.markdown("---")
-    st.markdown("<p class='section-label'>Contact</p>", unsafe_allow_html=True)
-    st.markdown("""
-<div style="line-height:2;">
-  📧 <a href='mailto:justinkurt837@gmail.com' style='color:#a8b3c1;text-decoration:none;font-size:0.82rem;'>justinkurt837@gmail.com</a><br>
-  📱 <span style='color:#a8b3c1;font-size:0.82rem;'>09928330407</span><br>
-  💻 <a href='https://github.com/KurtJustinMalubay' target='_blank' style='color:#a8b3c1;text-decoration:none;font-size:0.82rem;'>github.com/KurtJustinMalubay</a><br>
-  🎮 <a href='https://sashimiproductions.itch.io/' target='_blank' style='color:#a8b3c1;text-decoration:none;font-size:0.82rem;'>sashimiproductions.itch.io</a>
-</div>
-""", unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.markdown("<p class='section-label'>Quick Stats</p>", unsafe_allow_html=True)
-    st.metric("Year Level", "3rd Year")
-    st.metric("Scholarship", "CHED Merit")
-    st.metric("Projects", "2 Shipped")
-
-    st.markdown("---")
-    st.markdown("<p class='section-label'>Filter Skills</p>", unsafe_allow_html=True)
-    skill_filter = st.slider("Min proficiency (%)", min_value=0, max_value=100, value=0, step=5)
-
-    show_tools = st.checkbox("Show tool badges on projects", value=True)
-
-    st.markdown("---")
-    st.markdown(
-        "<p style='font-size:0.72rem;color:#484f58;text-align:center;'>⚔️ Built with Streamlit · 2026</p>",
-        unsafe_allow_html=True,
-    )
-
-
-# ─── Header ─────────────────────────────────────────────────────────────────────
-col_h1, col_h2 = st.columns([2, 1])
-with col_h1:
-    st.markdown("<p class='section-label'>Portfolio · 2026</p>", unsafe_allow_html=True)
-    st.markdown("<p class='hero-name'>Kurt Justin J. Malubay</p>", unsafe_allow_html=True)
-    st.markdown(
-        "<p class='hero-sub'>BSCS 3-F1 · Cebu Institute of Technology – University · Expected 2028 · CHED Merit Scholar</p>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        "<span class='tag-gold'>Game Developer</span>"
-        "<span class='badge'>Computer Science</span>"
-        "<span class='badge'>C# / Godot</span>"
-        "<span class='badge'>Unity</span>"
-        "<span class='badge'>Python</span>",
-        unsafe_allow_html=True,
-    )
-
-with col_h2:
-    st.markdown("<br>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Year", "3rd")
-    c2.metric("Status", "Scholar")
-    c3.metric("Projects", "2")
-
-st.markdown("---")
-
-
-# ─── Tab Navigation ──────────────────────────────────────────────────────────────
-tab_bio, tab_skills, tab_projects, tab_contact = st.tabs(
-    ["✦ Autobiography", "✦ Skills", "✦ Projects", "✦ Contact"]
+SKILLS = pd.DataFrame(
+    {
+        "Skill": ["C#", "C++", "C", "Python", "HTML", "CSS", "React", "TypeScript", "Tailwind CSS"],
+        "Proficiency": [78, 75, 70, 50, 70, 70, 60, 60, 60],
+        "Category": [
+            "Game Dev",
+            "Systems / Algorithms",
+            "Systems / Fundamentals",
+            "Web / AI (newly started)",
+            "Web Development",
+            "Web Development",
+            "Web Development",
+            "Web Development",
+            "Web Development",
+        ],
+    }
 )
 
+TOOLS = {
+    "Engines": ["Godot 4", "Unity"],
+    "Art & Design": ["Blender", "Figma", "Aseprite"],
+    "Backend & Data": ["Django", "Supabase", "MySQL"],
+}
 
-# ════════════════════════════════════════════════════════════════════════════════
-# TAB 1 — AUTOBIOGRAPHY
-# ════════════════════════════════════════════════════════════════════════════════
-with tab_bio:
-    st.markdown("### A Story From the Provinces to the Code")
-    st.write(
-        "Computer Science student, game developer, and curious tinkerer — born at the confluence "
-        "of sea and mountain in Southern Leyte, now building digital worlds from a desk in Cebu."
-    )
+PROJECTS = [
+    {
+        "name": "Infinitus",
+        "tag": "INF",
+        "image": "infinitus.jpg",
+        "role": "Project Manager, Environment Artist, Model Designer, Skill Effects Designer, UI/UX Designer, Sound Designer",
+        "collaborators": "Glenshayne Belarmino, Wilmark Racho",
+        "description": "A multiplayer wizard battle game where players cast spells and navigate a meticulously crafted environment.",
+        "stack": ["Godot 4", "C#", "Blender", "Figma"],
+        "outcome": "Shipped prototype framework.",
+    },
+    {
+        "name": "TLGMS (The Last Glensh Man Standing)",
+        "tag": "TLG",
+        "image": "tlgms.jpg",
+        "role": "Sole Developer / Creator",
+        "collaborators": "None (solo project)",
+        "description": "A survival shooting game set on Earth 122 as the last surviving member of the Glensh species.",
+        "stack": ["Unity", "C#", "Aseprite"],
+        "outcome": "First completed solo game development project.",
+    },
+    {
+        "name": "DevVault",
+        "tag": "DVT",
+        "image": "devvault.jpg",
+        "role": "Lead Developer / Architect",
+        "collaborators": "None listed",
+        "description": (
+            "A game development knowledge and asset management web application built for "
+            "organizing technical documentation and reusable code snippets."
+        ),
+        "stack": ["Python Django", "Supabase", "MySQL"],
+        "outcome": "Active internal tool for workflow efficiency.",
+    },
+]
 
-    st.markdown("<br>", unsafe_allow_html=True)
+CHAPTERS = [
+    {
+        "title": "Childhood & Background",
+        "period": "Until 2018",
+        "body": (
+            "I grew up in <b>San Juan, Southern Leyte</b>, a town where the sea meets the mountains. "
+            "The province was an important part of my childhood: the sea and mountains were part of everyday life, "
+            "and I often found myself observing how things worked around me. I was curious about the patterns "
+            "behind nature, daily routines, and the devices people used. One of my earliest technology memories "
+            "is playing <b>Assassin's Creed</b> on my mother's <b>BlackBerry</b>. Even then, I wondered how a small "
+            "phone could bring a game world to life. That childhood question stayed with me and grew into a deeper "
+            "interest in technology. I attended <b>San Juan Central Elementary School</b> until 2018."
+        ),
+    },
+    {
+        "title": "The Spark of Curiosity",
+        "period": "2018 - 2024",
+        "body": (
+            "As I grew older, the question that began in childhood—how technology and game worlds are made—" 
+            "continued to follow me. I kept learning through curiosity, research, and experimenting with what "
+            "I could access, gradually turning that early interest into a more focused passion for computers "
+            "and game development. At <b>San Juan National High School</b>, where I studied until 2024, I pursued "
+            "a background in <b>Media Arts and STEM</b>. That combination helped me appreciate both the creative "
+            "side of making things and the logical thinking needed to understand how they work."
+        ),
+    },
+    {
+        "title": "Education & Transition to College",
+        "period": "2024",
+        "body": (
+            "I went through public schools from elementary through senior high school, building my education "
+            "step by step in the community where I grew up. After completing high school and passing multiple "
+            "university entrance exams, I chose <b>Cebu Institute of Technology – University (CIT-U)</b>. Its "
+            "challenging Computer Science program felt like the right place to turn my long-standing curiosity "
+            "about technology into practical knowledge and stronger development skills. Moving from Southern "
+            "Leyte to Cebu also marked an important transition as I began this next stage of my education."
+        ),
+    },
+    {
+        "title": "Current Life & Outlook",
+        "period": "Present",
+        "body": (
+            "Today I am a <b>3rd-year Computer Science student</b> at CIT-U and a <b>CHED Merit Scholar</b>. "
+            "Outside my studies, I work as an independent developer and collaborate with peers on game and "
+            "software projects, taking part in both the technical and creative work. Each project gives me a "
+            "chance to practice what I learn, explore unfamiliar tools, and improve how I approach problems. "
+            "I want to keep growing as a developer and build things that are thoughtfully designed, efficient, "
+            "and enjoyable to use."
+        ),
+    },
+]
 
-    # Chapters presented as radio-driven accordion so the user navigates at their own pace
-    chapter_options = [
-        "🌊  Childhood & Background",
-        "✨  The Spark of Curiosity",
-        "🎓  Education & Transition",
-        "💻  Current Life & Outlook",
-    ]
-    selected_chapter = st.radio(
-        "Read a chapter:",
-        chapter_options,
-        horizontal=True,
-        label_visibility="collapsed",
-    )
+INTERNSHIP_TEXT = (
+    "Actively seeking internship opportunities where I can apply my foundational computer science "
+    "background, game development experience, and passion for optimised software engineering. "
+    "Eager to learn from industry mentors, tackle complex engineering challenges, and contribute "
+    "meaningfully to innovative tech and gaming teams."
+)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+# ---------------------------------------------------------------------------
+# 3. STYLING
+# ---------------------------------------------------------------------------
+CSS = """
+<style>
+:root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface-2: #12181f;
+    --gold: #e8d5a3;
+    --muted: #8b949e;
+    --text: #c9d1d9;
+    --border: #30363d;
+    color-scheme: dark;
+}
 
-    if selected_chapter == chapter_options[0]:
-        st.markdown("""
-<div class='card-gold'>
-<h3>Childhood & Background</h3>
-<p>
-I grew up in <strong style='color:#e8d5a3;'>San Juan, Southern Leyte</strong> — a quiet municipality
-where the sea stretches to the horizon in one direction and green mountain slopes press in from the other.
-Life there moved slowly and deliberately, and I absorbed that pace.
-</p>
-<p>
-As a child I spent hours watching how things worked: how water carved paths through soil after rain,
-how the tides followed a rhythm I could eventually predict, how a broken radio could be coaxed
-back to life with enough patience and the right nudge. That instinct — to understand systems from the inside —
-turned out to be the earliest version of the programmer I am becoming.
-</p>
-</div>
-""", unsafe_allow_html=True)
+html, body, .stApp {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+/* Preserve Streamlit's ligature font so sidebar controls show icons, not names. */
+.material-symbols-rounded,
+.material-symbols-outlined,
+span[data-testid="stIconMaterial"] {
+    font-family: "Material Symbols Rounded" !important;
+    font-weight: normal !important;
+    font-style: normal !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+    white-space: nowrap !important;
+    word-wrap: normal !important;
+    direction: ltr !important;
+    -webkit-font-feature-settings: "liga";
+    -webkit-font-smoothing: antialiased;
+}
+.stApp { background-color: var(--bg); }
+[data-testid="stHeader"] { background: transparent; }
+.block-container { padding-top: 2.5rem; max-width: 1200px; }
 
-    elif selected_chapter == chapter_options[1]:
-        st.markdown("""
-<div class='card-gold'>
-<h3>The Spark of Curiosity</h3>
-<p>
-The turning point arrived when my mother came home with a <strong style='color:#e8d5a3;'>BlackBerry phone</strong>.
-That small, rectangular device felt impossibly sophisticated — a world compressed into glass and circuitry.
-I was transfixed less by the phone itself than by the idea that a person could <em>make</em> something like that.
-</p>
-<p>
-The catalyst that crystallised everything was <strong style='color:#e8d5a3;'>Assassin's Creed</strong>.
-Playing it didn't just entertain me — it rewired something. The open world, the systems layered on systems,
-the narrative stitched into the architecture: I needed to know how that was built, and who built it.
-</p>
-<p>
-That curiosity carried me through elementary school at
-<strong style='color:#e8d5a3;'>San Juan Central Elementary School</strong> (until 2018)
-and high school at <strong style='color:#e8d5a3;'>San Juan National High School</strong> (until 2024),
-where I quietly fed a growing obsession with software, games, and the logic underneath both.
-</p>
-</div>
-""", unsafe_allow_html=True)
+.stApp p, .stApp li, .stApp label, .stApp [data-testid="stCaptionContainer"] { color: var(--text); }
+.stApp [data-testid="stCaptionContainer"] { color: var(--muted); }
+h1, h2, h3, h4 { color: var(--gold) !important; letter-spacing: 0.2px; font-weight: 700 !important; }
+h1 { font-size: 2.6rem !important; }
+a { color: var(--gold) !important; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.muted { color: var(--muted) !important; }
+hr { border-color: var(--border) !important; }
 
-    elif selected_chapter == chapter_options[2]:
-        st.markdown("""
-<div class='card-gold'>
-<h3>Education & Transition to College</h3>
-<p>
-After high school I navigated the gauntlet of university entrance exams and passed several —
-but <strong style='color:#e8d5a3;'>Cebu Institute of Technology – University (CIT-U)</strong>
-stood apart. Its Computer Science programme has a reputation for being genuinely competitive,
-and competitive is what I needed: an environment that would sharpen me rather than accommodate complacency.
-</p>
-<p>
-The early semesters were a reckoning. Shifting from provincial public school rhythms to a rigorous
-CS curriculum demanded a full reinvention of how I studied and how I thought.
-Game development became my survival mechanism — every new concept I could connect to a mechanic,
-a shader, or a system in a project I cared about, I retained. Theory met practice, and I stayed afloat.
-</p>
-</div>
-""", unsafe_allow_html=True)
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background-color: var(--surface-2);
+    border-right: 1px solid var(--border);
+}
+[data-testid="stSidebar"] .block-container, [data-testid="stSidebarContent"] { padding-top: 1.5rem; }
+/* Keep Streamlit's sidebar toggle visible against the dark header/sidebar. */
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"] {
+    color: var(--text) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+[data-testid="stSidebarCollapseButton"] svg,
+[data-testid="stSidebarCollapsedControl"] svg,
+[data-testid="collapsedControl"] svg {
+    color: var(--text) !important;
+    fill: var(--text) !important;
+    opacity: 1 !important;
+}
+.brand { display: flex; align-items: center; gap: 0.9rem; margin-bottom: 0.4rem; }
+.avatar {
+    width: 52px; height: 52px; border-radius: 12px; flex: 0 0 52px;
+    background: var(--gold); color: #0d1117;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 1.15rem; letter-spacing: 1px;
+}
+.brand .bn { color: var(--gold); font-weight: 700; line-height: 1.2; }
+.brand .bs { color: var(--muted); font-size: 0.8rem; }
+.nav-label { color: var(--muted); font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; margin: 0.6rem 0 0.4rem 0; }
+.side-links a { display: block; padding: 0.15rem 0; font-size: 0.88rem; }
+.side-links span { color: var(--muted); font-size: 0.88rem; display: block; padding: 0.15rem 0; }
 
-    elif selected_chapter == chapter_options[3]:
-        st.markdown("""
-<div class='card-gold'>
-<h3>Current Life & Outlook</h3>
-<p>
-Today I am a <strong style='color:#e8d5a3;'>3rd-year BS Computer Science student</strong>
-at CIT-U, holding a <strong style='color:#e8d5a3;'>CHED Merit Scholarship</strong>.
-By this point in the programme I have built solid foundations in Data Structures & Algorithms
-and Design & Analysis of Algorithms — the bedrock that makes everything else learnable fast.
-</p>
-<p>
-Outside coursework I collaborate with peers on game and software projects, currently
-serving as Project Manager, Environment Artist, and UI/UX Designer on
-<em style='color:#e8d5a3;'>Infinitus</em>, a multiplayer wizard battle game in Godot 4.
-I believe the best engineers are made at the intersection of deep fundamentals and hands-on craft —
-and I'm building both simultaneously.
-</p>
-</div>
-""", unsafe_allow_html=True)
+/* Typography helpers */
+.eyebrow { color: var(--muted); text-transform: uppercase; letter-spacing: 3px; font-size: 0.78rem; margin-bottom: 0.2rem; }
+.lead { color: var(--text); font-size: 1.1rem; margin: 0.2rem 0 0.8rem 0; }
 
-    # Internship callout inside bio tab
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("""
-<div class='internship-callout'>
-<p class='section-label' style='margin-bottom:0.6rem;'>Open to Opportunities</p>
-<p>
-Actively seeking internship opportunities where I can apply my foundational computer science background,
-game development experience, and passion for optimised software engineering.
-Eager to learn from industry mentors, tackle complex engineering challenges, and contribute meaningfully
-to innovative tech and gaming teams.
-</p>
-</div>
-""", unsafe_allow_html=True)
+/* Equal-height grids: every card in a row stretches to the tallest card */
+.grid { display: grid; gap: 1rem; align-items: stretch; margin-bottom: 1rem; }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) {
+    .grid-3, .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Cards */
+.card, .card-gold {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.3rem 1.5rem;
+    box-sizing: border-box;
+    height: 100%;
+    transition: border-color 0.15s ease;
+}
+.card-gold { border-left: 4px solid var(--gold); }
+.card:hover, .card-gold:hover { border-color: var(--gold); }
+.card h4, .card-gold h4 { margin: 0 0 0.5rem 0; font-size: 1.05rem; }
+.card p, .card-gold p { margin: 0; line-height: 1.6; }
+.card .kicker { color: var(--muted); font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.4rem; }
+.card .row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.45rem 0; border-bottom: 1px solid var(--border); }
+.card .row:last-child { border-bottom: none; }
+.card .row .k { color: var(--muted); flex: 0 0 8.5rem; min-width: 8.5rem; }
+.card .row .v { color: var(--text); flex: 1 1 0; min-width: 0; text-align: right; overflow-wrap: anywhere; }
+.project-tags { margin-top: 0.6rem; padding-bottom: 1.5rem; }
+
+.chip {
+    display: inline-block; background: rgba(232,213,163,0.12); color: var(--gold);
+    border: 1px solid rgba(232,213,163,0.35); border-radius: 6px;
+    padding: 0.1rem 0.55rem; font-size: 0.75rem; letter-spacing: 1px; margin-bottom: 0.6rem;
+}
+
+/* Call-out */
+.callout {
+    background: linear-gradient(135deg, rgba(232,213,163,0.12), rgba(232,213,163,0.03));
+    border: 1px solid var(--gold);
+    border-radius: 12px;
+    padding: 1.4rem 1.7rem;
+    margin: 0.5rem 0 1.2rem 0;
+}
+.callout .label { color: var(--gold); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; font-size: 0.78rem; }
+.callout p { font-style: italic; margin: 0.5rem 0 0 0; font-size: 1.02rem; line-height: 1.6; }
+
+/* Badges */
+.badge {
+    display: inline-block; background-color: var(--surface-2); color: var(--gold);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 0.2rem 0.75rem; margin: 0.15rem 0.25rem 0.15rem 0; font-size: 0.82rem;
+}
+
+/* Image placeholder */
+.placeholder {
+    background-color: var(--surface-2); border: 2px dashed var(--border); border-radius: 12px;
+    color: var(--muted); text-align: center; min-height: 260px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3rem;
+}
+.placeholder .big { font-size: 3.2rem; font-weight: 800; color: var(--gold); letter-spacing: 3px; }
+.placeholder .small { font-size: 0.75rem; }
+
+/* Metrics */
+[data-testid="stMetric"] {
+    background-color: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.2rem;
+}
+[data-testid="stMetricValue"] { color: var(--gold); }
+[data-testid="stMetricLabel"] p { color: var(--muted) !important; }
+
+/* Inputs */
+input, textarea, [data-baseweb="select"] > div {
+    background-color: var(--surface-2) !important; color: var(--text) !important;
+}
+.category-tags { display: flex; flex-flow: row wrap; align-items: center; gap: 0.45rem; margin: 0.6rem 0 1rem; }
+.category-tag {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    width: max-content; max-width: 100%; padding: 0.35rem 0.7rem;
+    color: var(--text); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 999px;
+    line-height: 1.35; white-space: nowrap;
+}
+.category-tag a { color: var(--muted) !important; font-weight: 700; text-decoration: none; }
+.category-tag a:hover { color: var(--gold) !important; }
+[data-testid="stForm"] { background-color: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+
+/* Buttons: same width, centred text */
+.stButton, .stFormSubmitButton { width: 100%; }
+.stButton > button, .stFormSubmitButton > button {
+    width: 100%; border-radius: 10px; border: 1px solid var(--border);
+    background-color: var(--surface); color: var(--text);
+    padding: 0.55rem 0.9rem; justify-content: center; transition: all 0.15s ease;
+}
+.stButton > button p, .stFormSubmitButton > button p { color: var(--text); font-weight: 500; }
+.stButton > button:hover, .stFormSubmitButton > button:hover { border-color: var(--gold); }
+.stButton > button:hover p, .stFormSubmitButton > button:hover p { color: var(--gold); }
+
+/* Give every navigation button the width of the longest label. */
+section[data-testid="stSidebar"] div[class*="st-key-nav_"] {
+    width: 240px !important; max-width: 100% !important;
+}
+section[data-testid="stSidebar"] div[class*="st-key-nav_"] button {
+    display: flex; width: 240px !important; min-width: 240px !important;
+    max-width: 100% !important;
+    box-sizing: border-box; justify-content: flex-start; text-align: left;
+}
+section[data-testid="stSidebar"] div[class*="st-key-nav_"] button p {
+    text-align: left; width: 100%;
+}
+
+/* Match the size and alignment of the two home-page calls to action. */
+div[class*="st-key-hero_projects"] button,
+div[class*="st-key-hero_contact"] button {
+    width: 100%; min-height: 3.4rem; box-sizing: border-box;
+    border-radius: 12px; padding: 0.8rem 1rem; justify-content: center;
+}
+div[class*="st-key-hero_projects"] { margin-top: 0.65rem; }
+div[class*="st-key-hero_projects"] button {
+    min-height: 3.25rem; padding: 0.7rem 1.25rem;
+}
+
+/* Explore cards are full-card buttons; pseudo-elements create a true card layout. */
+div[class*="st-key-home_explore_"] { width: 100%; height: 100%; }
+div[class*="st-key-home_explore_"] [data-testid="stButton"] { width: 100%; height: 100%; }
+div[class*="st-key-home_explore_"] button {
+    display: flex !important; flex-direction: column !important;
+    align-items: flex-start !important; gap: 0;
+    width: 100% !important; min-height: 13rem; height: 100%; box-sizing: border-box;
+    padding: 1.3rem 1.5rem; border-radius: 12px;
+    justify-content: flex-start !important; text-align: left !important;
+}
+div[class*="st-key-home_explore_"] button > div {
+    display: block !important; align-self: stretch !important;
+    width: 100% !important; text-align: left !important; white-space: normal;
+}
+div[class*="st-key-home_explore_"] button [data-testid="stMarkdownContainer"] {
+    display: block !important; width: 100% !important;
+    text-align: left !important; white-space: normal;
+}
+div[class*="st-key-home_explore_"] button p {
+    display: block !important; width: 100% !important;
+    text-align: left !important; white-space: normal; overflow-wrap: anywhere;
+}
+div[class*="st-key-home_explore_"] button p {
+    align-self: stretch !important; text-align: left !important;
+    color: var(--gold) !important; font-size: 1.35rem !important;
+    font-weight: 700; margin: 0; white-space: normal;
+}
+div[class*="st-key-home_explore_"] button::after {
+    align-self: stretch; text-align: left !important;
+    color: var(--muted); font-size: 0.95rem; line-height: 1.6; margin-top: 1rem;
+}
+div[class*="st-key-home_explore_Autobiography"] button::after { content: "My story, Southern Leyte to CIT-U."; }
+div[class*="st-key-home_explore_Skills"] button::after { content: "Languages and tools."; }
+div[class*="st-key-home_explore_Projects"] button::after { content: "Selected game and software work."; }
+div[class*="st-key-home_explore_Contact"] button::after { content: "Get in touch."; }
+/* Active / primary buttons: gold background with DARK text so it stays readable */
+.stButton > button[kind="primary"],
+.stButton > button[data-testid="stBaseButton-primary"],
+.stFormSubmitButton > button[kind="primaryFormSubmit"],
+.stFormSubmitButton > button[data-testid="stBaseButton-primaryFormSubmit"] {
+    background-color: var(--gold); border-color: var(--gold);
+}
+.stButton > button[kind="primary"] p,
+.stButton > button[data-testid="stBaseButton-primary"] p,
+.stFormSubmitButton > button[kind="primaryFormSubmit"] p,
+.stFormSubmitButton > button[data-testid="stBaseButton-primaryFormSubmit"] p,
+.stButton > button[kind="primary"]:hover p,
+.stButton > button[data-testid="stBaseButton-primary"]:hover p {
+    color: #0d1117 !important; font-weight: 700;
+}
+.stButton > button[kind="primary"]:hover,
+.stButton > button[data-testid="stBaseButton-primary"]:hover { filter: brightness(1.08); }
+</style>
+"""
+st.markdown(CSS, unsafe_allow_html=True)
 
 
-# ════════════════════════════════════════════════════════════════════════════════
-# TAB 2 — SKILLS
-# ════════════════════════════════════════════════════════════════════════════════
-with tab_skills:
-    st.markdown("### Technical Proficiency")
-
-    st.markdown("""
-<div class='card'>
-<p>
-By the third year of a rigorous CS programme, the most valuable outcome is not expert mastery
-of every framework — it is the <strong style='color:#e8d5a3;'>solid core fundamentals</strong>
-(Data Structures, Algorithm Design & Analysis) that make picking up any new tool
-a matter of days rather than months. The percentages below reflect genuine working confidence
-with each language, not marketing copy.
-</p>
-</div>
-""", unsafe_allow_html=True)
-
-    # ── Skill Data ──
-    skill_data = {
-        "Language": ["C#", "C++", "C", "Python"],
-        "Proficiency (%)": [78, 75, 70, 50],
-        "Primary Context": ["Godot 4 / Unity game dev", "Systems / coursework", "Low-level / coursework", "Data science / automation"],
-        "Confidence Note": ["Primary language", "Comfortable", "Comfortable", "Actively growing"],
-    }
-    df_skills = pd.DataFrame(skill_data)
-
-    # Apply sidebar filter
-    df_filtered = df_skills[df_skills["Proficiency (%)"] >= skill_filter].reset_index(drop=True)
-
-    col_t, col_c = st.columns([1, 1], gap="large")
-
-    with col_t:
-        st.markdown("<p class='section-label'>Proficiency Table</p>", unsafe_allow_html=True)
-        if df_filtered.empty:
-            st.info("No languages meet the current filter. Lower the slider on the left.")
-        else:
-            st.dataframe(
-                df_filtered,
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "Language": st.column_config.TextColumn("Language"),
-                    "Proficiency (%)": st.column_config.ProgressColumn(
-                        "Proficiency",
-                        min_value=0,
-                        max_value=100,
-                        format="%d%%",
-                    ),
-                    "Primary Context": st.column_config.TextColumn("Used For"),
-                    "Confidence Note": st.column_config.TextColumn("Level"),
-                },
-            )
-
-    with col_c:
-        st.markdown("<p class='section-label'>Visual Comparison</p>", unsafe_allow_html=True)
-        if not df_filtered.empty:
-            chart_df = df_filtered.set_index("Language")[["Proficiency (%)"]]
-            st.bar_chart(chart_df, color="#e8d5a3", use_container_width=True, height=260)
-        else:
-            st.info("No data to chart.")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("<p class='section-label'>Also Comfortable With</p>", unsafe_allow_html=True)
-    additional_tools = {
-        "Godot 4": "Game engine (primary)",
-        "Unity": "Game engine (prototyping)",
-        "Blender": "3D modelling & environment art",
-        "Figma": "UI/UX design",
-        "Aseprite": "2D pixel art & sprites",
-        "Git": "Version control",
-    }
-    tool_cols = st.columns(3)
-    for i, (tool, desc) in enumerate(additional_tools.items()):
-        with tool_cols[i % 3]:
-            st.markdown(f"""
-<div class='card' style='padding:0.9rem 1.1rem;margin-bottom:0.6rem;'>
-  <p style='color:#e8d5a3;font-weight:600;margin-bottom:0.1rem;font-size:0.88rem;'>{tool}</p>
-  <p style='color:#8b949e;font-size:0.78rem;margin:0;'>{desc}</p>
-</div>
-""", unsafe_allow_html=True)
+# ---------------------------------------------------------------------------
+# 4. HELPERS
+# ---------------------------------------------------------------------------
+def set_page(name: str) -> None:
+    """Callback used by every navigation button."""
+    st.session_state.page = name
 
 
-# ════════════════════════════════════════════════════════════════════════════════
-# TAB 3 — PROJECTS
-# ════════════════════════════════════════════════════════════════════════════════
-with tab_projects:
-    st.markdown("### Shipped Projects")
+def add_skill_category() -> None:
+    """Add the search selection to the removable category list."""
+    category = st.session_state.get("skills_category_search")
+    selected = st.session_state.get("skills_selected_categories", [])
+    if category and category not in selected:
+        st.session_state["skills_selected_categories"] = [*selected, category]
+    st.session_state["skills_category_search"] = None
 
-    # ── Project selector ──
-    selected_project = st.selectbox(
-        "Browse project:",
-        ["Infinitus — Multiplayer Wizard Battle", "TLGMS — The Last Glensh Man Standing"],
-        label_visibility="visible",
-    )
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    if selected_project.startswith("Infinitus"):
-        p_col1, p_col2 = st.columns([1, 1], gap="large")
-
-        with p_col1:
-            inf_path = "assets/infinitus.jpg"
-            if os.path.exists(inf_path):
-                st.image(inf_path, use_container_width=True, caption="Infinitus — in-engine screenshot")
-            else:
-                st.image(
-                    "https://via.placeholder.com/600x340/161b22/e8d5a3?text=Infinitus",
-                    use_container_width=True,
-                    caption="Infinitus — placeholder",
-                )
-
-        with p_col2:
-            st.markdown("""
-<div class='card'>
-<h3>Infinitus</h3>
-<p style='color:#8b949e;font-size:0.8rem;margin-bottom:0.8rem;'>Multiplayer · Godot 4 · C# · 2025 – 2026</p>
-<p>
-A multiplayer wizard battle game where players cast spells and navigate a meticulously crafted environment.
-Each arena is hand-designed to reward spatial awareness, and the spell system balances reaction speed
-against strategic cooldown management.
-</p>
-</div>
-""", unsafe_allow_html=True)
-
-            st.markdown("""
-<div class='card' style='padding:0.9rem 1.2rem;'>
-<p class='section-label'>My Roles</p>
-<p>Project Manager · Environment Artist · Model Designer<br>
-Skill Effects Designer · UI/UX Designer · Sound Designer</p>
-<p style='margin-top:0.6rem;'><em style='color:#8b949e;font-size:0.82rem;'>
-Coordinated requirement definitions and scoped tasks across the team throughout the full dev cycle.
-</em></p>
-</div>
-""", unsafe_allow_html=True)
-
-            st.markdown("""
-<div class='card' style='padding:0.9rem 1.2rem;'>
-<p class='section-label'>Collaborators</p>
-<p>Glenshayne Belarmino &nbsp;·&nbsp; Wilmark Racho</p>
-</div>
-""", unsafe_allow_html=True)
-
-            if show_tools:
-                st.markdown(
-                    "<p class='section-label'>Built With</p>"
-                    "<span class='tag-gold'>Godot 4</span>"
-                    "<span class='badge'>C#</span>"
-                    "<span class='badge'>Blender</span>"
-                    "<span class='badge'>Figma</span>"
-                    "<span class='badge'>Audio Tools</span>",
-                    unsafe_allow_html=True,
-                )
-
+def show_image(filename: str, caption: str, label: str = "IMG") -> None:
+    """Show an image from assets/, or a clean placeholder if it is missing."""
+    path = ASSETS / filename
+    if path.exists():
+        st.image(str(path), caption=caption, use_container_width=True)
     else:
-        p_col1, p_col2 = st.columns([1, 1], gap="large")
+        st.markdown(
+            f'<div class="placeholder"><div class="big">{label}</div>'
+            f"<div>{caption}</div>"
+            f'<div class="small">Add assets/{filename}</div></div>',
+            unsafe_allow_html=True,
+        )
 
-        with p_col1:
-            tlg_path = "assets/tlgms.jpg"
-            if os.path.exists(tlg_path):
-                st.image(tlg_path, use_container_width=True, caption="TLGMS — gameplay screenshot")
-            else:
-                st.image(
-                    "https://via.placeholder.com/600x340/161b22/e8d5a3?text=TLGMS",
-                    use_container_width=True,
-                    caption="TLGMS — placeholder",
-                )
 
-        with p_col2:
-            st.markdown("""
-<div class='card'>
-<h3>TLGMS</h3>
-<p style='color:#8b949e;font-size:0.8rem;margin-bottom:0.8rem;'>Survival Shooter · Unity · C# · 2024 (1st-year prototype)</p>
-<p>
-<em>The Last Glensh Man Standing</em> is a survival shooting game set on the war-torn world of
-<strong style='color:#e8d5a3;'>Earth 122</strong>. As the last surviving member of the Glensh species,
-the player fights relentless waves of enemies in a desperate struggle for survival.
-</p>
-<p>
-Originally conceived as a 3D RPG-style shooter with a 45-degree top-down camera, TLGMS was my
-first complete game prototype — built entirely solo after the first year of university to prove
-the concept and validate the workflow.
-</p>
+def badges(items) -> str:
+    return "".join(f'<span class="badge">{item}</span>' for item in items)
+
+
+def callout(text: str) -> None:
+    st.markdown(
+        f'<div class="callout"><div class="label">Looking for Internship</div><p>"{text}"</p></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def eyebrow(text: str) -> None:
+    st.markdown(f'<div class="eyebrow">{text}</div>', unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------------------------
+# 5. SIDEBAR
+# ---------------------------------------------------------------------------
+NAV = ["Home", "Autobiography", "Skills", "Projects", "Contact"]
+
+with st.sidebar:
+    st.markdown(
+        f"""
+<div class="brand">
+<div class="avatar">{PROFILE['initials']}</div>
+<div><div class="bn">{PROFILE['name']}</div><div class="bs">{PROFILE['program']} · CIT-U</div></div>
 </div>
-""", unsafe_allow_html=True)
+""",
+        unsafe_allow_html=True,
+    )
+    st.divider()
 
-            st.markdown("""
-<div class='card' style='padding:0.9rem 1.2rem;'>
-<p class='section-label'>My Role</p>
-<p>Sole Developer — concept, design, code, and assets, start to finish.</p>
+    st.markdown('<div class="nav-label">Navigate</div>', unsafe_allow_html=True)
+    for label in NAV:
+        st.button(
+            label,
+            key=f"nav_{label}",
+            on_click=set_page,
+            args=(label,),
+            type="primary" if st.session_state.page == label else "secondary",
+        )
+
+    st.divider()
+    st.markdown('<div class="nav-label">Contact</div>', unsafe_allow_html=True)
+    st.markdown(
+        f"""
+<div class="side-links">
+<span>{PROFILE['email']}</span>
+<span>{PROFILE['phone']}</span>
+<a href="{PROFILE['github']}" target="_blank">GitHub</a>
+<a href="{PROFILE['itch']}" target="_blank">Itch.io</a>
 </div>
-""", unsafe_allow_html=True)
+""",
+        unsafe_allow_html=True,
+    )
 
-            if show_tools:
-                st.markdown(
-                    "<p class='section-label'>Built With</p>"
-                    "<span class='tag-gold'>Unity</span>"
-                    "<span class='badge'>C#</span>"
-                    "<span class='badge'>Aseprite</span>",
-                    unsafe_allow_html=True,
-                )
 
-    st.markdown("---")
+# ---------------------------------------------------------------------------
+# 6. PAGES
+# ---------------------------------------------------------------------------
+def page_home() -> None:
+    # Split hero: text on the left, profile image on the right
+    text_col, img_col = st.columns([3, 2], vertical_alignment="center", gap="large")
+    with text_col:
+        eyebrow("Autobiography &amp; Portfolio")
+        st.title(PROFILE["name"])
+        st.markdown(
+            '<div class="lead">Computer Science student, indie game developer and optimization enthusiast '
+            "building games and software from Pardo, Cebu City.</div>"
+            + badges([PROFILE["program"], "CIT-U", PROFILE["status"], f"Class of {PROFILE['grad']}"]),
+            unsafe_allow_html=True,
+        )
+        st.button("View projects", key="hero_projects", on_click=set_page, args=("Projects",), type="primary")
+    with img_col:
+        with st.container(border=True):
+            show_image("profile.jpg", PROFILE["name"], PROFILE["initials"])
 
-    # ── Internship callout in projects tab ──
-    st.markdown("""
-<div class='internship-callout'>
-<p class='section-label' style='margin-bottom:0.6rem;'>Looking for Internship</p>
-<p>
-Actively seeking internship opportunities where I can apply my foundational computer science background,
-game development experience, and passion for optimised software engineering.
-Eager to learn from industry mentors, tackle complex engineering challenges, and contribute meaningfully
-to innovative tech and gaming teams.
-</p>
+    st.divider()
+
+    # Metrics grid
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Year Level", "3rd Year")
+    m2.metric("Shipped Projects", len(PROJECTS))
+    m3.metric("Core Languages", len(SKILLS))
+    m4.metric("Expected Graduation", PROFILE["grad"])
+
+    st.header("Professional Summary")
+    st.markdown(
+        f"""
+<div class="grid grid-2">
+<div class="card-gold"><h4>About</h4><p>I am a <b>{PROFILE['program']}</b> student at <b>Cebu Institute of Technology – University</b> and a <b>CHED Merit Scholar</b>. By third year, I have built solid fundamentals in Data Structures &amp; Algorithms and Algorithm Design &amp; Analysis, which lets me write optimized code with strong engineering intuition. I build games and software with C#, C++, C and Python, and I enjoy wearing many hats, from programming to environment art, UI/UX and sound.</p></div>
+<div class="card"><h4>At a glance</h4>
+<div class="row"><span class="k">Program</span><span class="v">{PROFILE['program']}</span></div>
+<div class="row"><span class="k">University</span><span class="v">CIT-U</span></div>
+<div class="row"><span class="k">Status</span><span class="v">{PROFILE['status']}</span></div>
+<div class="row"><span class="k">Graduation</span><span class="v">{PROFILE['grad']}</span></div>
+<div class="row"><span class="k">Focus</span><span class="v">Games, Algorithms, Tools</span></div>
 </div>
-""", unsafe_allow_html=True)
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
+    callout(INTERNSHIP_TEXT)
 
-# ════════════════════════════════════════════════════════════════════════════════
-# TAB 4 — CONTACT / FEEDBACK
-# ════════════════════════════════════════════════════════════════════════════════
-with tab_contact:
-    st.markdown("### Get in Touch")
-    st.write("Whether you have an internship opening, a project idea, or just want to connect — feel free to reach out.")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    c_left, c_right = st.columns([3, 2], gap="large")
-
-    with c_left:
-        with st.form("contact_form", clear_on_submit=True):
-            st.markdown("<p class='section-label'>Send a Message</p>", unsafe_allow_html=True)
-
-            form_name = st.text_input("Your name", placeholder="e.g. Jane Santos")
-            form_email = st.text_input("Your email", placeholder="e.g. jane@company.com")
-            form_subject = st.selectbox(
-                "Subject",
-                ["Internship Opportunity", "Project Collaboration", "General Inquiry", "Other"],
+    st.header("Explore")
+    shortcuts = [
+        ("Autobiography", "My story, from Southern Leyte to CIT-U."),
+        ("Skills", "Languages, tools and proficiency."),
+        ("Projects", "Infinitus, TLGMS and DevVault."),
+        ("Contact", "Reach out or leave feedback."),
+    ]
+    cols = st.columns(4)
+    card_titles = {"Autobiography": "Story", "Skills": "Skills", "Projects": "Work", "Contact": "Contact"}
+    for col, (name, _) in zip(cols, shortcuts):
+        with col:
+            st.button(
+                card_titles[name],
+                key=f"home_explore_{name}",
+                on_click=set_page,
+                args=(name,),
             )
-            form_message = st.text_area(
-                "Message",
-                placeholder="Write your message here...",
-                height=140,
+
+
+def page_autobiography() -> None:
+    eyebrow("About me")
+    st.title("Autobiography")
+    st.caption("From the shores of Southern Leyte to the lecture halls of CIT-U.")
+    st.divider()
+
+    titles = [c["title"] for c in CHAPTERS]
+    view = st.radio(
+        "Choose a chapter",
+        ["All chapters"] + titles,
+        horizontal=True,
+    )
+
+    selected = CHAPTERS if view == "All chapters" else [c for c in CHAPTERS if c["title"] == view]
+
+    for chapter in selected:
+        st.markdown(
+            f'<div class="card-gold" style="margin-bottom:1rem;">'
+            f'<span class="chip">{chapter["period"]}</span>'
+            f'<h4>{chapter["title"]}</h4><p>{chapter["body"]}</p></div>',
+            unsafe_allow_html=True,
+        )
+
+    st.subheader("Quick Facts")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Hometown", "San Juan, Leyte")
+    c2.metric("University", "CIT-U")
+    c3.metric("Status", "CHED Merit")
+
+
+def page_skills() -> None:
+    if "remove_skill_category" in st.query_params:
+        category_to_remove = st.query_params["remove_skill_category"]
+        selected_categories = st.session_state.get("skills_selected_categories", [])
+        st.session_state["skills_selected_categories"] = [
+            category for category in selected_categories if category != category_to_remove
+        ]
+        del st.query_params["remove_skill_category"]
+
+    eyebrow("Capabilities")
+    st.title("Skills")
+    st.header("Proficiency Overview")
+
+    st.markdown(
+        '<div class="card-gold"><p>By third year, I have built solid core fundamentals in '
+        "<b>Data Structures &amp; Algorithms</b> and <b>Algorithm Design &amp; Analysis</b>. "
+        "These fundamentals let me write optimized code and develop strong engineering intuition. "
+        "The numbers below are my own honest self-assessment. Python is the newest addition to my "
+        "toolkit, so it sits lower for now.</p></div>",
+        unsafe_allow_html=True,
+    )
+    st.write("")
+
+    # Filters live on the page itself
+    with st.container(border=True):
+        st.subheader("Filters")
+        all_categories = SKILLS["Category"].drop_duplicates().tolist()
+        if "skills_selected_categories" not in st.session_state:
+            st.session_state.skills_selected_categories = all_categories.copy()
+
+        categories = st.session_state.skills_selected_categories
+        available_categories = [item for item in all_categories if item not in categories]
+        st.selectbox(
+            "Category",
+            available_categories,
+            index=None,
+            placeholder="Search to add a category...",
+            key="skills_category_search",
+            on_change=add_skill_category,
+        )
+        if categories:
+            tag_markup = "".join(
+                f'<span class="category-tag">{category}<a href="?remove_skill_category={quote(category)}" aria-label="Remove {category}">×</a></span>'
+                for category in categories
             )
+            st.markdown(f'<div class="category-tags">{tag_markup}</div>', unsafe_allow_html=True)
+        min_prof = st.slider(
+            "Minimum proficiency (%)",
+            min_value=0,
+            max_value=100,
+            value=0,
+            step=5,
+        )
 
-            submitted = st.form_submit_button("Send Message")
+    filtered = SKILLS[SKILLS["Proficiency"] >= min_prof]
+    if categories:
+        filtered = filtered[filtered["Category"].isin(categories)]
+    else:
+        filtered = filtered.iloc[0:0]
+    filtered = filtered.reset_index(drop=True)
 
-            if submitted:
-                if form_name.strip() and form_email.strip() and form_message.strip():
-                    st.success(
-                        f"Message received — thank you, {form_name.split()[0]}! "
-                        "Kurt will get back to you soon."
+    tab_prof, tab_tools = st.tabs(["Proficiency", "Tools & Technologies"])
+
+    with tab_prof:
+        if filtered.empty:
+            st.warning("No skills match the current filters. Lower the slider or pick another category.")
+        else:
+            left, right = st.columns([3, 2])
+            with left:
+                with st.container(border=True, height=380):
+                    st.subheader("Skill Table")
+                    st.dataframe(
+                        filtered,
+                        hide_index=True,
+                        use_container_width=True,
+                        height=270,
+                        column_config={
+                            "Proficiency": st.column_config.ProgressColumn(
+                                "Proficiency",
+                                min_value=0,
+                                max_value=100,
+                                format="%d%%",
+                            )
+                        },
                     )
-                else:
-                    st.warning("Please fill in all required fields before sending.")
+            with right:
+                with st.container(border=True, height=380):
+                    st.subheader("Proficiency Chart")
+                    st.bar_chart(
+                        filtered.set_index("Skill")["Proficiency"],
+                        color="#e8d5a3",
+                        height=270,
+                    )
 
-    with c_right:
-        st.markdown("""
-<div class='card' style='margin-bottom:0.8rem;'>
-<p class='section-label'>Direct Contact</p>
-<p>📧 <a href='mailto:justinkurt837@gmail.com' style='color:#a8b3c1;'>justinkurt837@gmail.com</a></p>
-<p>📱 09928330407</p>
-</div>
-<div class='card' style='margin-bottom:0.8rem;'>
-<p class='section-label'>Online Profiles</p>
-<p>💻 <a href='https://github.com/KurtJustinMalubay' target='_blank' style='color:#a8b3c1;'>GitHub</a></p>
-<p>🎮 <a href='https://sashimiproductions.itch.io/' target='_blank' style='color:#a8b3c1;'>Itch.io</a></p>
-</div>
-<div class='card'>
-<p class='section-label'>Location</p>
-<p>Cebu City, Philippines</p>
-<p style='font-size:0.8rem;color:#8b949e;'>Open to remote internships and Cebu-based on-site roles.</p>
-</div>
-""", unsafe_allow_html=True)
+            avg = float(np.mean(filtered["Proficiency"]))
+            best = filtered.loc[filtered["Proficiency"].idxmax(), "Skill"]
+            k1, k2, k3 = st.columns(3)
+            k1.metric("Skills shown", len(filtered))
+            k2.metric("Average proficiency", f"{avg:.1f}%")
+            k3.metric("Strongest", best)
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("⬇  Download Resume (placeholder)"):
-            st.info("Resume download would be wired to a PDF in production.")
+    with tab_tools:
+        cards = "".join(
+            f'<div class="card"><h4>{cat}</h4>{badges(items)}</div>' for cat, items in TOOLS.items()
+        )
+        st.markdown(f'<div class="grid grid-3">{cards}</div>', unsafe_allow_html=True)
+
+
+def render_project(project: dict, index: int) -> None:
+    with st.container(border=True):
+        img_col, info_col = st.columns([2, 3], gap="large")
+        with img_col:
+            show_image(project["image"], project["name"], project["tag"])
+        with info_col:
+            st.markdown(
+                f"""
+<div class="kicker muted" style="letter-spacing:2px;font-size:0.75rem;">PROJECT 0{index + 1}</div>
+<h3 style="margin:0.2rem 0 0.6rem 0;">{project['name']}</h3>
+<p>{project['description']}</p>
+<div class="card" style="margin:0.8rem 0;">
+<div class="row"><span class="k">Role</span><span class="v">{project['role']}</span></div>
+<div class="row"><span class="k">Collaborators</span><span class="v">{project['collaborators']}</span></div>
+<div class="row"><span class="k">Outcome</span><span class="v">{project['outcome']}</span></div>
+</div>
+<div class="project-tags">{badges(project['stack'])}</div>
+""",
+                unsafe_allow_html=True,
+            )
+
+
+def page_projects() -> None:
+    eyebrow("Selected work")
+    st.title("Projects")
+    st.caption("Three shipped projects across game development and web tooling.")
+    st.divider()
+
+    short_names = [p["name"].split(" (")[0] for p in PROJECTS]
+    view = st.radio(
+        "View",
+        ["All projects"] + short_names + ["Comparison table"],
+        horizontal=True,
+    )
+
+    if view == "Comparison table":
+        overview = pd.DataFrame(
+            {
+                "Project": [p["name"] for p in PROJECTS],
+                "Role": [p["role"].split(",")[0] for p in PROJECTS],
+                "Stack": [", ".join(p["stack"]) for p in PROJECTS],
+                "Outcome": [p["outcome"] for p in PROJECTS],
+            }
+        )
+        st.table(overview)
+        return
+
+    for i, project in enumerate(PROJECTS):
+        if view == "All projects" or view == short_names[i]:
+            render_project(project, i)
+
+
+def page_contact() -> None:
+    eyebrow("Get in touch")
+    st.title("Contact")
+    st.caption("Questions, feedback or opportunities? I'd love to hear from you.")
+    st.divider()
+
+    callout(INTERNSHIP_TEXT)
+
+    form_col, info_col = st.columns([3, 2], gap="large")
+
+    with form_col:
+        st.header("Feedback / Contact Form")
+        with st.form("contact_form", clear_on_submit=True):
+            n1, n2 = st.columns(2)
+            with n1:
+                name = st.text_input("Your name")
+            with n2:
+                email = st.text_input("Your email")
+            topic = st.selectbox(
+                "Topic",
+                ["Internship opportunity", "Project collaboration", "Portfolio feedback", "Just saying hi"],
+            )
+            reply = st.radio("Preferred reply method", ["Email", "Phone"], horizontal=True)
+            rating = st.slider("How would you rate this portfolio?", 1, 5, 5)
+            message = st.text_area("Message", height=150)
+            copy_me = st.checkbox("Send me a copy of this message")
+            submitted = st.form_submit_button("Send Message", type="primary")
+
+        if submitted:
+            if not name.strip() or not email.strip() or not message.strip():
+                st.error("Please fill in your name, email and message.")
+            elif "@" not in email or "." not in email.split("@")[-1]:
+                st.error("Please enter a valid email address.")
+            else:
+                st.success(
+                    f"Thanks, {name.strip()}! Your message about “{topic}” was received "
+                    f"(rating: {rating}/5). I'll reply by {reply.lower()}."
+                    + (" A copy would be sent to your email." if copy_me else "")
+                )
+
+    with info_col:
+        st.header("Direct Contact")
+        st.markdown(
+            f"""
+<div class="grid" style="grid-template-columns: minmax(0, 1fr);">
+<div class="card-gold"><div class="kicker">Email</div><p>{PROFILE['email']}</p></div>
+<div class="card-gold"><div class="kicker">Phone</div><p>{PROFILE['phone']}</p></div>
+<div class="card-gold"><div class="kicker">GitHub</div><p><a href="{PROFILE['github']}" target="_blank">KurtJustinMalubay</a></p></div>
+<div class="card-gold"><div class="kicker">Itch.io</div><p><a href="{PROFILE['itch']}" target="_blank">sashimiproductions</a></p></div>
+<div class="card"><div class="kicker">Location</div><p>Pardo, Cebu City, Philippines<br>Hometown: San Juan, Southern Leyte</p></div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+
+# ---------------------------------------------------------------------------
+# 7. ROUTER
+# ---------------------------------------------------------------------------
+ROUTES = {
+    "Home": page_home,
+    "Autobiography": page_autobiography,
+    "Skills": page_skills,
+    "Projects": page_projects,
+    "Contact": page_contact,
+}
+
+ROUTES.get(st.session_state.page, page_home)()
+
+st.divider()
+st.caption("© 2026 Kurt Justin J. Malubay · CSIT 349 Applied AI · Built with Streamlit")
