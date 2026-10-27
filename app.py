@@ -268,12 +268,39 @@ hr {{
   color: {TXT_M} !important;
 }}
 
-/* ── Buttons ── */
+/* ── Buttons (global) ── */
 .stButton button, .stLinkButton a {{
   font-family: 'Cinzel', serif !important;
   font-size: .67rem !important;
   letter-spacing: .12em !important;
   text-transform: uppercase !important;
+}}
+
+/* ── Sidebar nav buttons ── */
+[data-testid="stSidebar"] .stButton button {{
+  background: transparent !important;
+  border: none !important;
+  border-left: 2px solid transparent !important;
+  border-radius: 0 3px 3px 0 !important;
+  text-align: left !important;
+  padding: .5rem .85rem !important;
+  color: {TXT_B} !important;
+  font-weight: 400 !important;
+  box-shadow: none !important;
+  width: 100% !important;
+  margin-bottom: .15rem !important;
+  transition: background .15s, color .15s !important;
+}}
+[data-testid="stSidebar"] .stButton button:hover {{
+  background: rgba(201,168,76,.06) !important;
+  color: {TXT_H} !important;
+  border-left-color: {GOLD_D} !important;
+}}
+[data-testid="stSidebar"] .stButton button[kind="primary"] {{
+  background: rgba(201,168,76,.10) !important;
+  border-left: 2px solid {GOLD} !important;
+  color: {GOLD_S} !important;
+  font-weight: 600 !important;
 }}
 
 /* ── Expanders ── */
@@ -359,45 +386,15 @@ with st.sidebar:
     # ── Nav ───────────────────────────────────────────────────────────────
     for key, numeral, subtitle in PAGES:
         active = page == key
-        st.markdown(
-            f"""
-            <div style="
-              display: flex; align-items: center; gap: .7rem;
-              padding: .55rem .8rem; margin-bottom: .25rem;
-              background: {'rgba(201,168,76,.08)' if active else 'transparent'};
-              border-left: 2px solid {'#c9a84c' if active else BORDER};
-              border-radius: 0 3px 3px 0;
-              cursor: pointer;
-            ">
-              <span style="
-                font-family: 'Cinzel', serif; font-size: .58rem;
-                color: {'#c9a84c' if active else TXT_M}; letter-spacing: .12em;
-                min-width: 14px; text-align: center;
-              ">{numeral}</span>
-              <div>
-                <div style="
-                  font-family: 'Cinzel', serif; font-size: .68rem;
-                  letter-spacing: .14em; text-transform: uppercase;
-                  color: {'#e8c97a' if active else TXT_B};
-                  font-weight: {'600' if active else '400'};
-                ">{key}</div>
-                <div style="
-                  font-family: 'JetBrains Mono', monospace;
-                  font-size: .52rem; letter-spacing: .10em;
-                  color: {'#c9a84c' if active else TXT_M}; margin-top: .05rem;
-                ">{subtitle}</div>
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        # Build label with numeral + page name + subtitle, all in one button
+        btn_label = f"{numeral}  {key}  ·  {subtitle}"
         st.button(
-            key, key=f"nav_{key}",
+            btn_label,
+            key=f"nav_{key}",
             use_container_width=True,
             on_click=go, args=(key,),
             type="primary" if active else "secondary",
             help=subtitle,
-            label_visibility="collapsed",
         )
 
     st.write("")
